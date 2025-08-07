@@ -1,0 +1,21 @@
+# Xcode
+xcuserdata/
+build/
+DerivedData/
+*.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/
+
+# Swift Package Manager
+Packages/
+Package.pins
+Package.resolved
+
+# macOS
+.DS_Store
+
+# LFM2 Models
+*.bundle
+models/
+
+# User data
+*.csv
+*.log
