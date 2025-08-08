@@ -17,9 +17,9 @@ This app leverages Liquid AI's LEAP Devkit to provide completely local financial
 ## App Structure
 
 ### Three Main Screens:
-1. **Profile Page**: CSV import, transaction editing, and data management
-2. **Insights Page**: Spending analysis with visual breakdowns and categorization
-3. **Budget Page**: Goal setting and AI-powered budget recommendations
+1. **Transactions Page**: CSV import, view uploaded files, and browse categorized transactions
+2. **Insights Page**: Monthly cash flow visualization with Sankey diagrams and AI-powered spending analysis
+3. **Budget Page**: Interactive chat interface for budget negotiation and finalized budget summaries
 
 ## Technical Stack
 

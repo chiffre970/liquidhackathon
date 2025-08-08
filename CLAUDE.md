@@ -14,20 +14,21 @@ Building Vera - a privacy-first iOS personal finance assistant for the Liquid AI
 
 ### Data Flow
 1. CSV import → Row-by-row processing → LFM2 categorization → Core Data persistence
-2. Profile page → Insights (analyze button) → Budget recommendations
+2. Transactions page → Insights (automatic analysis) → Budget chat/summary
 3. All processing happens locally using bundled 700M parameter LFM2 model
 
 ### Key Components
-- **ProfileView**: CSV import, transaction editing
-- **InsightsView**: Analysis trigger, Sankey visualization  
-- **BudgetView**: Goal setting, AI recommendations
-- **TransactionProcessor**: LFM2 integration for categorization
+- **TransactionsView**: CSV import, file management, transaction list
+- **InsightsView**: Sankey visualization, spending breakdown  
+- **BudgetView**: Chat interface, budget negotiation, summary view
+- **LFM2Manager**: AI processing for categorization and analysis
 - **DataManager**: Core Data operations
 
 ### UI/UX Requirements
-- Green and cream color scheme
-- Native iOS design patterns
-- Tab navigation (Profile, Insights/Budget toggle)
+- Color palette: #FFFDFD (white), #E3E3E3 (grey), #2E4D40 (dark green), #71CCA5 (light green)
+- Inter font family (all weights)
+- Custom bottom navigation with sliding indicator
+- Container-based layout with rounded corners (20px radius)
 - Loading states with progress bars
 - Error modals matching app styling
 
@@ -46,30 +47,58 @@ Building Vera - a privacy-first iOS personal finance assistant for the Liquid AI
 ## File Structure
 ```
 Vera/
-├── VeraApp.swift             # Main app entry
+├── VeraApp.swift
+├── ContentView.swift
+├── DesignSystem/
+│   ├── Colors.swift
+│   ├── Typography.swift
+│   └── DesignSystem.swift
+├── Components/
+│   ├── VContainer.swift
+│   ├── VButton.swift
+│   ├── VDataTable.swift
+│   ├── VCard.swift
+│   └── VBottomNav.swift
 ├── Views/
-│   ├── ProfileView.swift     # CSV import, editing
-│   ├── InsightsView.swift    # Analysis, Sankey
-│   └── BudgetView.swift      # Goals, recommendations
+│   ├── Transactions/
+│   │   ├── TransactionsView.swift
+│   │   ├── UploadsSection.swift
+│   │   └── TransactionsList.swift
+│   ├── Insights/
+│   │   ├── InsightsView.swift
+│   │   ├── SankeyDiagram.swift
+│   │   └── BreakdownSection.swift
+│   └── Budget/
+│       ├── BudgetView.swift
+│       ├── BudgetChatView.swift
+│       └── BudgetSummaryView.swift
 ├── Models/
-│   ├── Transaction.swift     # Core Data model
-│   └── Category.swift        # Spending categories
+│   ├── Transaction.swift
+│   ├── CashFlowData.swift
+│   ├── Budget.swift
+│   └── ChatMessage.swift
 ├── Services/
-│   ├── CSVProcessor.swift    # File parsing
-│   ├── LFM2Manager.swift     # AI processing
-│   └── DataManager.swift     # Core Data
-├── Resources/
-│   ├── categories.txt        # Predefined categories
-│   └── SystemPrompts/        # LFM2 prompts
-└── Assets.xcassets          # UI assets
+│   ├── CSVProcessor.swift
+│   ├── LFM2Manager.swift
+│   └── DataManager.swift
+└── Assets.xcassets/
+    └── Icons/
+        ├── transaction.svg
+        ├── insights.svg
+        ├── budget.svg
+        ├── add.svg
+        ├── delete.svg
+        └── send.svg
 ```
 
 ## Development Priority
-1. Basic app structure and navigation ✓
-2. CSV import functionality
-3. LFM2 integration and processing
-4. UI refinement and visualizations
-5. Testing and polish
+1. Design system and reusable components
+2. Navigation structure with custom bottom nav
+3. Basic views with placeholder content
+4. LFM2 integration for dynamic categorization
+5. Interactive features (chat, file upload)
+6. Data visualization (Sankey, budget flow)
+7. Polish and animations
 
 ## Privacy Requirements
 - No network requests for AI processing

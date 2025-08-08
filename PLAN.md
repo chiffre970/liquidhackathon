@@ -3,20 +3,22 @@
 ## Phase 1: Foundation (Days 1-2)
 ### Project Structure
 - [ ] Create Xcode project with SwiftUI
-- [ ] Set up folder structure (Views, Models, Services, Resources)
+- [ ] Set up folder structure (Views, Models, Services, Components, DesignSystem)
 - [ ] Configure LEAP SDK via Swift Package Manager
-- [ ] Create basic tab navigation structure
-- [ ] Implement color theme (green/cream)
+- [ ] Create design system with colors (#FFFDFD, #E3E3E3, #2E4D40, #71CCA5)
+- [ ] Implement Inter font family
 
 ### Core Navigation
-- [ ] ProfileView (landing page)
-- [ ] InsightsView with Budget toggle
-- [ ] Tab bar navigation
-- [ ] Empty state messages
+- [ ] ContentView with custom VBottomNav
+- [ ] TransactionsView (main page)
+- [ ] InsightsView with Sankey diagram
+- [ ] BudgetView with chat interface
+- [ ] Reusable components (VContainer, VButton, VCard)
 
 ## Phase 2: Data Layer (Days 3-4)
 ### CSV Processing
-- [ ] File import functionality in ProfileView
+- [ ] File import functionality in TransactionsView
+- [ ] UploadsSection component for file management
 - [ ] CSV parsing with flexible column detection
 - [ ] Transaction data model creation
 - [ ] Row-by-row processing architecture
@@ -24,12 +26,14 @@
 ### Data Storage
 - [ ] Core Data model setup
 - [ ] Transaction entity with relationships
+- [ ] CashFlowData model for insights
+- [ ] Budget and ChatMessage models
 - [ ] Data persistence layer
-- [ ] Transaction merge logic (debit/credit cancellation)
 
-### Manual Editing
-- [ ] Transaction list in ProfileView
-- [ ] Manual category editing interface
+### Transaction Management
+- [ ] TransactionsList component
+- [ ] TransactionRow display
+- [ ] File deletion functionality
 - [ ] Data validation and error handling
 
 ## Phase 3: AI Integration (Days 5-6)
@@ -52,38 +56,45 @@
 
 ## Phase 4: Insights & Visualization (Days 7-8)
 ### Insights Page
-- [ ] "Analyse" button implementation (center → top corner)
+- [ ] MonthSelector component
+- [ ] Automatic analysis on page load
 - [ ] Loading states with progress bars
-- [ ] Spending breakdown calculations
-- [ ] Category summation and analysis
+- [ ] BreakdownSection with AI analysis
 
 ### Data Visualization
-- [ ] Sankey diagram implementation
-- [ ] Income flow visualization
-- [ ] Spending category breakdowns
-- [ ] Interactive chart elements
+- [ ] SankeyDiagram component implementation
+- [ ] Dynamic flow paths based on spending
+- [ ] Category percentage calculations
+- [ ] Canvas-based rendering
 
 ### Analysis Features
-- [ ] Spending pattern detection
-- [ ] Monthly/weekly period selection
-- [ ] Insights generation with LFM2
+- [ ] LFM2 spending pattern detection
+- [ ] Monthly period selection
+- [ ] Dynamic category generation
+- [ ] Natural language insights
 
 ## Phase 5: Budget Management (Days 9-10)
-### Budget Creation
-- [ ] Goal setting interface
-- [ ] Period selection (monthly/weekly)
-- [ ] Goal validation with LFM2
-- [ ] Budget vs actual tracking
+### Budget Chat Interface
+- [ ] BudgetChatView component
+- [ ] ChatBubble message display
+- [ ] Input field with send button
+- [ ] Chat conversation state management
 
-### AI Recommendations
-- [ ] Budget analysis system prompt
-- [ ] Spending optimization suggestions
-- [ ] Goal feasibility assessment
-- [ ] Personalized recommendations
+### Budget Negotiation
+- [ ] LFM2 budget conversation handling
+- [ ] Context-aware responses
+- [ ] Budget finalization logic
+- [ ] Mode switching (chat/summary)
+
+### Budget Summary
+- [ ] BudgetSummaryView component
+- [ ] BudgetVisualization (similar to Sankey)
+- [ ] ChangesSection for spending adjustments
+- [ ] TargetCard for monthly goals
 
 ### Polish & Testing
 - [ ] UI refinement and animations
-- [ ] Error modal styling (green/cream theme)
+- [ ] Container styling consistency
 - [ ] Edge case testing
 - [ ] Performance optimization
 - [ ] Final testing on device
