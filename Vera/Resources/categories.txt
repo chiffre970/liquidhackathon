@@ -1,51 +1,15 @@
 Housing
-Rent
 Utilities
-Internet
-Phone
 Insurance
-Groceries
-Restaurants
-Coffee
-Takeout
+Food & Dining
 Transportation
-Gas
-Public Transit
-Rideshare
-Parking
 Healthcare
-Medical
-Dental
-Pharmacy
 Entertainment
-Movies
-Music
-Gaming
-Books
 Shopping
-Clothing
-Electronics
-Home Goods
 Personal Care
 Education
-Tuition
-Books
-Courses
 Travel
-Flights
-Hotels
-Vacation
 Income
-Salary
-Freelance
-Investment
-Refund
-Transfer
-Savings
-Investment
-Retirement
-Emergency Fund
-Debt Payment
-Credit Card
-Loan Payment
+Savings & Investments
+Debt & Loans
 Other

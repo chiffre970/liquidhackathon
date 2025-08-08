@@ -12,7 +12,7 @@ This guide outlines the development process for integrating and optimizing LFM2 
 **LFM2 Tasks**:
 - Extract transaction fields (date, amount, description, merchant)
 - Deduplicate internal transfers: Identify and zero out transfers between user's own accounts (e.g., savings → checking should not count as income/expense, match debits and credits that cancel out)
-- Categorize each transaction into predefined categories (e.g., Food & Dining, Transportation, Shopping, Bills & Utilities, Entertainment, Healthcare, Income)
+- Categorize each transaction into predefined categories, based on Vera/Resources/categories.txt (e.g., Food & Dining, Transportation, Shopping, Bills & Utilities, Entertainment, Healthcare, Income)
 - Clean and normalize merchant names
 - Identify recurring transactions/subscriptions
 - Flag unusual or potentially fraudulent transactions
