@@ -10,7 +10,7 @@ struct BudgetChatView: View {
         VStack(spacing: 0) {
             Text("Budget")
                 .font(.veraTitle())
-                .foregroundColor(.veraDarkGreen)
+                .foregroundColor(.black)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(.bottom, 20)
             

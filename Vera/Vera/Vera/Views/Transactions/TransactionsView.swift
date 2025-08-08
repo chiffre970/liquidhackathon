@@ -12,7 +12,7 @@ struct TransactionsView: View {
                 HStack {
                     Text("Transactions")
                         .font(.veraTitle())
-                        .foregroundColor(.veraDarkGreen)
+                        .foregroundColor(.black)
                     
                     Spacer()
                     

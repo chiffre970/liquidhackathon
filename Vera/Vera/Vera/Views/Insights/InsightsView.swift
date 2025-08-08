@@ -19,7 +19,7 @@ struct InsightsView: View {
                 VStack(alignment: .leading, spacing: 24) {
                     Text("Insights")
                         .font(.veraTitle())
-                        .foregroundColor(.veraDarkGreen)
+                        .foregroundColor(.black)
                     
                     MonthSelector(selectedMonth: $selectedMonth)
                     
