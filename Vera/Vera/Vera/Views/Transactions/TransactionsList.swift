@@ -17,7 +17,7 @@ struct TransactionsList: View {
                     .foregroundColor(.veraDarkGreen.opacity(0.4))
                     .padding(.vertical, 8)
             } else {
-                ScrollView {
+                ScrollView(showsIndicators: false) {
                     LazyVStack(spacing: 2) {
                         ForEach(transactions) { transaction in
                             TransactionRow(

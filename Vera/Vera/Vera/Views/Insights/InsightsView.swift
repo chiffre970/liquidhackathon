@@ -15,51 +15,51 @@ struct InsightsView: View {
     
     var body: some View {
         VContainer {
-            VStack(alignment: .leading, spacing: 24) {
-                Text("Insights")
-                    .font(.veraTitle())
-                    .foregroundColor(.veraDarkGreen)
-                
-                MonthSelector(selectedMonth: $selectedMonth)
-                
-                if let cashFlow = cashFlow {
-                    SankeyDiagram(data: cashFlow)
-                        .frame(height: 300)
-                        .background(Color.veraWhite)
-                        .cornerRadius(DesignSystem.smallCornerRadius)
+            ScrollView(showsIndicators: false) {
+                VStack(alignment: .leading, spacing: 24) {
+                    Text("Insights")
+                        .font(.veraTitle())
+                        .foregroundColor(.veraDarkGreen)
                     
-                    BreakdownSection(cashFlow: cashFlow)
-                } else if isAnalyzing {
-                    VStack(spacing: 16) {
-                        ProgressView()
-                            .progressViewStyle(CircularProgressViewStyle(tint: .veraLightGreen))
-                            .scaleEffect(1.2)
+                    MonthSelector(selectedMonth: $selectedMonth)
+                    
+                    if let cashFlow = cashFlow {
+                        SankeyDiagram(data: cashFlow)
+                            .frame(height: 300)
+                            .background(Color.veraWhite)
+                            .cornerRadius(DesignSystem.smallCornerRadius)
                         
-                        Text("Analyzing your spending patterns...")
-                            .font(.veraBodySmall())
-                            .foregroundColor(.veraDarkGreen.opacity(0.6))
-                    }
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .padding(.vertical, 50)
-                } else {
-                    VStack(spacing: 16) {
-                        Image(systemName: "chart.pie")
-                            .font(.custom("Inter", size: 48))
-                            .foregroundColor(.veraLightGreen.opacity(0.4))
-                        
-                        Text("No insights available yet")
-                            .font(.veraBody())
-                            .foregroundColor(.veraDarkGreen.opacity(0.6))
-                        
-                        VButton(title: "Analyze Transactions", style: .primary) {
-                            analyzeTransactions()
+                        BreakdownSection(cashFlow: cashFlow)
+                    } else if isAnalyzing {
+                        VStack(spacing: 16) {
+                            ProgressView()
+                                .progressViewStyle(CircularProgressViewStyle(tint: .veraLightGreen))
+                                .scaleEffect(1.2)
+                            
+                            Text("Analyzing your spending patterns...")
+                                .font(.veraBodySmall())
+                                .foregroundColor(.veraDarkGreen.opacity(0.6))
                         }
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 50)
+                    } else {
+                        VStack(spacing: 16) {
+                            Image(systemName: "chart.pie")
+                                .font(.custom("Inter", size: 48))
+                                .foregroundColor(.veraLightGreen.opacity(0.4))
+                            
+                            Text("No insights available yet")
+                                .font(.veraBody())
+                                .foregroundColor(.veraDarkGreen.opacity(0.6))
+                            
+                            VButton(title: "Analyze Transactions", style: .primary) {
+                                analyzeTransactions()
+                            }
+                        }
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 50)
                     }
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 50)
                 }
-                
-                Spacer()
             }
         }
         .onAppear { 

@@ -38,7 +38,7 @@ struct VDataTable: View {
                     .background(Color.veraDarkGreen.opacity(0.1))
             }
             
-            ScrollView {
+            ScrollView(showsIndicators: false) {
                 LazyVStack(spacing: 0) {
                     ForEach(Array(data.enumerated()), id: \.offset) { index, row in
                         HStack(spacing: 0) {

@@ -15,7 +15,7 @@ struct BudgetChatView: View {
                 .padding(.bottom, 20)
             
             ScrollViewReader { proxy in
-                ScrollView {
+                ScrollView(showsIndicators: false) {
                     LazyVStack(alignment: .leading, spacing: 12) {
                         ForEach(messages) { message in
                             ChatBubble(message: message)
