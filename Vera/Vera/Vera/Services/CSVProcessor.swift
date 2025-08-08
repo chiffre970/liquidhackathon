@@ -9,6 +9,18 @@ class CSVProcessor: ObservableObject {
         isProcessing = true
         errorMessage = nil
         
+        guard url.startAccessingSecurityScopedResource() else {
+            DispatchQueue.main.async {
+                self.errorMessage = "Cannot access the selected file"
+                self.isProcessing = false
+            }
+            return
+        }
+        
+        defer {
+            url.stopAccessingSecurityScopedResource()
+        }
+        
         do {
             let content = try String(contentsOf: url)
             let parsedTransactions = try parseCSV(content: content)

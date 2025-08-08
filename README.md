@@ -1,4 +1,4 @@
-# PFM App - Liquid AI Hackathon
+# Vera - Personal Finance Assistant
 
 A privacy-first personal finance management iOS app built with Liquid AI's LFM2 model for local, on-device transaction analysis and budgeting.
 
@@ -45,6 +45,7 @@ This app leverages Liquid AI's LEAP Devkit to provide completely local financial
 ## Project Timeline
 - **Target**: 10 days development cycle
 - **Hackathon**: Liquid AI Hackathon submission
+- **App Name**: Vera - your personal finance assistant
 
 ## Privacy & Security
 - All transaction data remains on device

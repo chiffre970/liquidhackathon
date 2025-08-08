@@ -1,13 +1,13 @@
 # Claude Development Context
 
-This file provides important context for Claude Code when working on the PFM app project.
+This file provides important context for Claude Code when working on the Vera app project.
 
 ## Project Overview
-Building a privacy-first iOS personal finance management app for the Liquid AI Hackathon using LFM2 model for local transaction analysis.
+Building Vera - a privacy-first iOS personal finance assistant for the Liquid AI Hackathon using LFM2 model for local transaction analysis.
 
 ## Key Development Commands
-- **Build**: `xcodebuild -project PFMApp.xcodeproj -scheme PFMApp -sdk iphoneos`
-- **Test**: `xcodebuild test -project PFMApp.xcodeproj -scheme PFMApp -destination 'platform=iOS Simulator,name=iPhone 15'`
+- **Build**: `xcodebuild -project Vera.xcodeproj -scheme Vera -sdk iphoneos`
+- **Test**: `xcodebuild test -project Vera.xcodeproj -scheme Vera -destination 'platform=iOS Simulator,name=iPhone 15'`
 - **Dependencies**: Swift Package Manager integration for LEAP SDK
 
 ## Architecture Decisions
@@ -45,8 +45,8 @@ Building a privacy-first iOS personal finance management app for the Liquid AI H
 
 ## File Structure
 ```
-PFMApp/
-├── PFMAppApp.swift           # Main app entry
+Vera/
+├── VeraApp.swift             # Main app entry
 ├── Views/
 │   ├── ProfileView.swift     # CSV import, editing
 │   ├── InsightsView.swift    # Analysis, Sankey
