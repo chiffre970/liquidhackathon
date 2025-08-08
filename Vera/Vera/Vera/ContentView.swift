@@ -27,7 +27,6 @@ struct ContentView: View {
                         .opacity(selectedTab == 2 ? 1 : 0)
                 }
                 .frame(maxHeight: .infinity)
-                .animation(nil, value: selectedTab)
                 
                 VBottomNav(selectedTab: $selectedTab, tabs: [
                     (icon: "transaction", label: "Transactions"),

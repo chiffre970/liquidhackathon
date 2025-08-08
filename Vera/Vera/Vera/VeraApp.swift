@@ -21,6 +21,10 @@ struct VeraApp: App {
                 .environmentObject(csvProcessor)
                 .environmentObject(dataManager)
                 .environmentObject(lfm2Manager)
+                .transaction { transaction in
+                    transaction.animation = nil
+                    transaction.disablesAnimations = true
+                }
         }
     }
 }
