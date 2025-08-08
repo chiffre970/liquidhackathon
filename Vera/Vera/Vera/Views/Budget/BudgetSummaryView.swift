@@ -9,13 +9,13 @@ struct BudgetSummaryView: View {
             HStack {
                 Text("Budget")
                     .font(.veraTitle())
-                    .foregroundColor(.veraDarkGreen)
+                    .foregroundColor(.black)
                 
                 Spacer()
                 
                 Button("New Budget", action: onNewBudget)
                     .font(.custom("Inter", size: Typography.FontSize.bodySmall).weight(Typography.FontWeight.medium))
-                    .foregroundColor(.veraLightGreen)
+                    .foregroundColor(.black)
             }
             
             if let budget = budget {
@@ -33,11 +33,11 @@ struct BudgetSummaryView: View {
                 VStack(spacing: 16) {
                     Image(systemName: "dollarsign.circle")
                         .font(.custom("Inter", size: 48))
-                        .foregroundColor(.veraLightGreen.opacity(0.4))
+                        .foregroundColor(.black.opacity(0.4))
                     
                     Text("No budget created yet")
                         .font(.veraBody())
-                        .foregroundColor(.veraDarkGreen.opacity(0.6))
+                        .foregroundColor(.black.opacity(0.6))
                     
                     VButton(title: "Create Budget", style: .primary) {
                         onNewBudget()
@@ -143,11 +143,11 @@ struct ChangesSection: View {
                     HStack(spacing: 8) {
                         Image(systemName: "checkmark.circle.fill")
                             .font(.custom("Inter", size: 14))
-                            .foregroundColor(.veraLightGreen)
+                            .foregroundColor(.black)
                         
                         Text(change)
                             .font(.veraBodySmall())
-                            .foregroundColor(.veraDarkGreen.opacity(0.8))
+                            .foregroundColor(.black.opacity(0.8))
                     }
                 }
             }
@@ -172,11 +172,11 @@ struct TargetCard: View {
             VStack(alignment: .leading, spacing: 4) {
                 Text("Monthly Target")
                     .font(.veraCaption())
-                    .foregroundColor(.veraDarkGreen.opacity(0.6))
+                    .foregroundColor(.black.opacity(0.6))
                 
                 Text("$\(Int(monthlyTarget))")
                     .font(.custom("Inter", size: Typography.FontSize.heading).weight(Typography.FontWeight.bold))
-                    .foregroundColor(.veraDarkGreen)
+                    .foregroundColor(.black)
             }
             
             Spacer()
@@ -184,11 +184,11 @@ struct TargetCard: View {
             VStack(alignment: .trailing, spacing: 4) {
                 Text("Savings Rate")
                     .font(.veraCaption())
-                    .foregroundColor(.veraDarkGreen.opacity(0.6))
+                    .foregroundColor(.black.opacity(0.6))
                 
                 Text("\(Int(savingsPercentage))%")
                     .font(.custom("Inter", size: Typography.FontSize.heading).weight(Typography.FontWeight.bold))
-                    .foregroundColor(.veraLightGreen)
+                    .foregroundColor(.black)
             }
         }
         .padding()

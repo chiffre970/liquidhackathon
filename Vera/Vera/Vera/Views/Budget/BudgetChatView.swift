@@ -132,7 +132,7 @@ struct ChatBubble: View {
             VStack(alignment: message.isUser ? .trailing : .leading, spacing: 4) {
                 Text(message.content)
                     .font(.veraBodySmall())
-                    .foregroundColor(message.isUser ? .white : .veraDarkGreen)
+                    .foregroundColor(message.isUser ? .white : .black)
                     .padding(12)
                     .background(message.isUser ? Color.veraLightGreen : Color.veraWhite)
                     .cornerRadius(16)
@@ -140,7 +140,7 @@ struct ChatBubble: View {
                 
                 Text(message.timestamp, style: .time)
                     .font(.veraCaption())
-                    .foregroundColor(.veraDarkGreen.opacity(0.5))
+                    .foregroundColor(.black.opacity(0.5))
             }
             .frame(maxWidth: 280, alignment: message.isUser ? .trailing : .leading)
             

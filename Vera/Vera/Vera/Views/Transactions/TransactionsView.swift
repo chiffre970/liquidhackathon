@@ -19,7 +19,7 @@ struct TransactionsView: View {
                     Button(action: { showingFilePicker = true }) {
                         Image(systemName: "plus.circle.fill")
                             .font(.custom("Inter", size: 24))
-                            .foregroundColor(.veraLightGreen)
+                            .foregroundColor(.black)
                     }
                 }
                 

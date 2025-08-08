@@ -38,7 +38,7 @@ struct InsightsView: View {
                             
                             Text("Analyzing your spending patterns...")
                                 .font(.veraBodySmall())
-                                .foregroundColor(.veraDarkGreen.opacity(0.6))
+                                .foregroundColor(.black.opacity(0.6))
                         }
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 50)
@@ -46,11 +46,11 @@ struct InsightsView: View {
                         VStack(spacing: 16) {
                             Image(systemName: "chart.pie")
                                 .font(.custom("Inter", size: 48))
-                                .foregroundColor(.veraLightGreen.opacity(0.4))
+                                .foregroundColor(.black.opacity(0.4))
                             
                             Text("No insights available yet")
                                 .font(.veraBody())
-                                .foregroundColor(.veraDarkGreen.opacity(0.6))
+                                .foregroundColor(.black.opacity(0.6))
                             
                             VButton(title: "Analyze Transactions", style: .primary) {
                                 analyzeTransactions()
@@ -116,14 +116,14 @@ struct MonthSelector: View {
             Button(action: { changeMonth(-1) }) {
                 Image(systemName: "chevron.left")
                     .font(.custom("Inter", size: 16).weight(.medium))
-                    .foregroundColor(.veraLightGreen)
+                    .foregroundColor(.black)
             }
             
             Spacer()
             
             Text(monthFormatter.string(from: selectedMonth))
                 .font(.veraBody())
-                .foregroundColor(.veraDarkGreen)
+                .foregroundColor(.black)
             
             Spacer()
             

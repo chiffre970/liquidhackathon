@@ -24,7 +24,7 @@ struct VDataTable: View {
                     Text(column.title)
                         .font(.veraBodySmall())
                         .fontWeight(Typography.FontWeight.semibold)
-                        .foregroundColor(.veraDarkGreen)
+                        .foregroundColor(.black)
                         .frame(width: column.width, alignment: .leading)
                         .frame(maxWidth: column.width == nil ? .infinity : nil)
                         .padding(.horizontal, 12)
@@ -45,7 +45,7 @@ struct VDataTable: View {
                             ForEach(columns, id: \.key) { column in
                                 Text(row[column.key] ?? "")
                                     .font(.veraBodySmall())
-                                    .foregroundColor(.veraDarkGreen.opacity(0.8))
+                                    .foregroundColor(.black.opacity(0.8))
                                     .frame(width: column.width, alignment: .leading)
                                     .frame(maxWidth: column.width == nil ? .infinity : nil)
                                     .padding(.horizontal, 12)

@@ -7,14 +7,14 @@ struct BreakdownSection: View {
         VStack(alignment: .leading, spacing: 12) {
             Text("Breakdown")
                 .font(.veraSubheading())
-                .foregroundColor(.veraDarkGreen)
+                .foregroundColor(.black)
             
             if let cashFlow = cashFlow {
                 VStack(alignment: .leading, spacing: 16) {
                     if let analysis = cashFlow.analysis {
                         Text(analysis)
                             .font(.veraBodySmall())
-                            .foregroundColor(.veraDarkGreen.opacity(0.8))
+                            .foregroundColor(.black.opacity(0.8))
                             .lineSpacing(4)
                     }
                     
@@ -27,17 +27,17 @@ struct BreakdownSection: View {
                                 
                                 Text(category.name)
                                     .font(.veraBodySmall())
-                                    .foregroundColor(.veraDarkGreen)
+                                    .foregroundColor(.black)
                                 
                                 Spacer()
                                 
                                 Text("$\(Int(category.amount))")
                                     .font(.custom("Inter", size: Typography.FontSize.bodySmall).weight(Typography.FontWeight.medium))
-                                    .foregroundColor(.veraDarkGreen)
+                                    .foregroundColor(.black)
                                 
                                 Text("\(Int(category.percentage))%")
                                     .font(.veraCaption())
-                                    .foregroundColor(.veraDarkGreen.opacity(0.6))
+                                    .foregroundColor(.black.opacity(0.6))
                                     .frame(width: 40, alignment: .trailing)
                             }
                         }
@@ -50,7 +50,7 @@ struct BreakdownSection: View {
                         VStack(alignment: .leading, spacing: 4) {
                             Text("Total Income")
                                 .font(.veraCaption())
-                                .foregroundColor(.veraDarkGreen.opacity(0.6))
+                                .foregroundColor(.black.opacity(0.6))
                             Text("$\(Int(cashFlow.income))")
                                 .font(.custom("Inter", size: Typography.FontSize.subheading).weight(Typography.FontWeight.semibold))
                                 .foregroundColor(.green)
@@ -59,7 +59,7 @@ struct BreakdownSection: View {
                         VStack(alignment: .leading, spacing: 4) {
                             Text("Total Expenses")
                                 .font(.veraCaption())
-                                .foregroundColor(.veraDarkGreen.opacity(0.6))
+                                .foregroundColor(.black.opacity(0.6))
                             Text("$\(Int(cashFlow.expenses))")
                                 .font(.custom("Inter", size: Typography.FontSize.subheading).weight(Typography.FontWeight.semibold))
                                 .foregroundColor(.red)
@@ -70,7 +70,7 @@ struct BreakdownSection: View {
                         VStack(alignment: .leading, spacing: 4) {
                             Text("Net")
                                 .font(.veraCaption())
-                                .foregroundColor(.veraDarkGreen.opacity(0.6))
+                                .foregroundColor(.black.opacity(0.6))
                             Text("$\(Int(cashFlow.income - cashFlow.expenses))")
                                 .font(.custom("Inter", size: Typography.FontSize.subheading).weight(Typography.FontWeight.semibold))
                                 .foregroundColor(cashFlow.income > cashFlow.expenses ? .green : .red)
@@ -83,7 +83,7 @@ struct BreakdownSection: View {
             } else {
                 Text("Analyzing your spending patterns...")
                     .font(.veraBodySmall())
-                    .foregroundColor(.veraGrey)
+                    .foregroundColor(.black)
                     .italic()
             }
         }

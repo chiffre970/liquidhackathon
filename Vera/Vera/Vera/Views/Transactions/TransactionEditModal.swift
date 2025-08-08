@@ -21,7 +21,7 @@ struct TransactionEditModal: View {
                         VStack(alignment: .leading, spacing: 8) {
                             Text("Description")
                                 .font(.custom("Inter", size: Typography.FontSize.bodySmall).weight(Typography.FontWeight.medium))
-                                .foregroundColor(.veraDarkGreen.opacity(0.7))
+                                .foregroundColor(.black.opacity(0.7))
                             
                             TextField("Enter description", text: $description)
                                 .font(.veraBody())
@@ -33,7 +33,7 @@ struct TransactionEditModal: View {
                         VStack(alignment: .leading, spacing: 8) {
                             Text("Amount")
                                 .font(.custom("Inter", size: Typography.FontSize.bodySmall).weight(Typography.FontWeight.medium))
-                                .foregroundColor(.veraDarkGreen.opacity(0.7))
+                                .foregroundColor(.black.opacity(0.7))
                             
                             TextField("0.00", text: $amount)
                                 .font(.veraBody())
@@ -46,7 +46,7 @@ struct TransactionEditModal: View {
                         VStack(alignment: .leading, spacing: 8) {
                             Text("Category")
                                 .font(.custom("Inter", size: Typography.FontSize.bodySmall).weight(Typography.FontWeight.medium))
-                                .foregroundColor(.veraDarkGreen.opacity(0.7))
+                                .foregroundColor(.black.opacity(0.7))
                             
                             ScrollView(.horizontal, showsIndicators: false) {
                                 HStack(spacing: 8) {
@@ -70,7 +70,7 @@ struct TransactionEditModal: View {
                         VStack(alignment: .leading, spacing: 8) {
                             Text("Date")
                                 .font(.custom("Inter", size: Typography.FontSize.bodySmall).weight(Typography.FontWeight.medium))
-                                .foregroundColor(.veraDarkGreen.opacity(0.7))
+                                .foregroundColor(.black.opacity(0.7))
                             
                             DatePicker("", selection: $date, displayedComponents: .date)
                                 .datePickerStyle(CompactDatePickerStyle())
@@ -84,7 +84,7 @@ struct TransactionEditModal: View {
                         Button(action: { isPresented = false }) {
                             Text("Cancel")
                                 .font(.custom("Inter", size: Typography.FontSize.body).weight(Typography.FontWeight.medium))
-                                .foregroundColor(.veraDarkGreen)
+                                .foregroundColor(.black)
                                 .frame(maxWidth: .infinity)
                                 .padding(.vertical, 14)
                                 .background(Color.veraWhite)
@@ -107,7 +107,7 @@ struct TransactionEditModal: View {
             .navigationBarTitleDisplayMode(.inline)
             .navigationBarItems(trailing: Button(action: { isPresented = false }) {
                 Image(systemName: "xmark.circle.fill")
-                    .foregroundColor(.veraDarkGreen.opacity(0.3))
+                    .foregroundColor(.black.opacity(0.3))
                     .font(.custom("Inter", size: 24))
             })
         }

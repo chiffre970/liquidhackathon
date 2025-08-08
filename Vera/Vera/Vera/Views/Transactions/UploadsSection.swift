@@ -7,29 +7,29 @@ struct UploadsSection: View {
         VStack(alignment: .leading, spacing: 12) {
             Text("Your uploads")
                 .font(.custom("Inter", size: Typography.FontSize.body).weight(Typography.FontWeight.semibold))
-                .foregroundColor(.veraDarkGreen.opacity(0.7))
+                .foregroundColor(.black.opacity(0.7))
             
             if csvProcessor.importedFiles.isEmpty {
                 Text("No files uploaded yet")
                     .font(.veraBodySmall())
-                    .foregroundColor(.veraDarkGreen.opacity(0.4))
+                    .foregroundColor(.black.opacity(0.4))
                     .padding(.vertical, 8)
             } else {
                 ForEach(csvProcessor.importedFiles, id: \.id) { file in
                     HStack {
                         Image(systemName: "doc.text")
                             .font(.custom("Inter", size: 14))
-                            .foregroundColor(.veraLightGreen)
+                            .foregroundColor(.black)
                         
                         Text(file.name)
                             .font(.veraBodySmall())
-                            .foregroundColor(.veraDarkGreen)
+                            .foregroundColor(.black)
                         
                         Spacer()
                         
                         Text(file.importDate, style: .date)
                             .font(.veraCaption())
-                            .foregroundColor(.veraDarkGreen.opacity(0.6))
+                            .foregroundColor(.black.opacity(0.6))
                         
                         Button(action: { 
                             deleteFile(file)

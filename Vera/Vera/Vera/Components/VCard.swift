@@ -23,13 +23,13 @@ struct VCard<Content: View>: View {
                     if let title = title {
                         Text(title)
                             .font(.veraSubheading())
-                            .foregroundColor(.veraDarkGreen)
+                            .foregroundColor(.black)
                     }
                     
                     if let subtitle = subtitle {
                         Text(subtitle)
                             .font(.veraCaption())
-                            .foregroundColor(.veraDarkGreen.opacity(0.6))
+                            .foregroundColor(.black.opacity(0.6))
                     }
                 }
             }

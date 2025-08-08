@@ -9,12 +9,12 @@ struct TransactionsList: View {
         VStack(alignment: .leading, spacing: 12) {
             Text("Your transactions")
                 .font(.custom("Inter", size: Typography.FontSize.body).weight(Typography.FontWeight.semibold))
-                .foregroundColor(.veraDarkGreen.opacity(0.7))
+                .foregroundColor(.black.opacity(0.7))
             
             if transactions.isEmpty {
                 Text("No transactions to display")
                     .font(.veraBodySmall())
-                    .foregroundColor(.veraDarkGreen.opacity(0.4))
+                    .foregroundColor(.black.opacity(0.4))
                     .padding(.vertical, 8)
             } else {
                 ScrollView(showsIndicators: false) {
@@ -63,12 +63,12 @@ struct TransactionRow: View {
             VStack(alignment: .leading, spacing: 4) {
                 Text(transaction.description)
                     .font(.veraBodySmall())
-                    .foregroundColor(.veraDarkGreen)
+                    .foregroundColor(.black)
                     .lineLimit(1)
                 
                 Text(transaction.date, style: .date)
                     .font(.veraCaption())
-                    .foregroundColor(.veraDarkGreen.opacity(0.6))
+                    .foregroundColor(.black.opacity(0.6))
             }
             
             Spacer()
@@ -88,7 +88,7 @@ struct TransactionRow: View {
             Button(action: onEdit) {
                 Image(systemName: "pencil")
                     .font(.custom("Inter", size: 14))
-                    .foregroundColor(.veraDarkGreen.opacity(0.5))
+                    .foregroundColor(.black.opacity(0.5))
                     .frame(width: 20, height: 20)
             }
         }
