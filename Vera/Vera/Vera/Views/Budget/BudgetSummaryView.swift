@@ -14,7 +14,7 @@ struct BudgetSummaryView: View {
                 Spacer()
                 
                 Button("New Budget", action: onNewBudget)
-                    .font(.system(size: Typography.FontSize.bodySmall, weight: Typography.FontWeight.medium))
+                    .font(.custom("Inter", size: Typography.FontSize.bodySmall).weight(Typography.FontWeight.medium))
                     .foregroundColor(.veraLightGreen)
             }
             
@@ -32,7 +32,7 @@ struct BudgetSummaryView: View {
             } else {
                 VStack(spacing: 16) {
                     Image(systemName: "dollarsign.circle")
-                        .font(.system(size: 48))
+                        .font(.custom("Inter", size: 48))
                         .foregroundColor(.veraLightGreen.opacity(0.4))
                     
                     Text("No budget created yet")
@@ -142,7 +142,7 @@ struct ChangesSection: View {
                 ForEach(changes, id: \.self) { change in
                     HStack(spacing: 8) {
                         Image(systemName: "checkmark.circle.fill")
-                            .font(.system(size: 14))
+                            .font(.custom("Inter", size: 14))
                             .foregroundColor(.veraLightGreen)
                         
                         Text(change)
@@ -175,7 +175,7 @@ struct TargetCard: View {
                     .foregroundColor(.veraDarkGreen.opacity(0.6))
                 
                 Text("$\(Int(monthlyTarget))")
-                    .font(.system(size: Typography.FontSize.heading, weight: Typography.FontWeight.bold))
+                    .font(.custom("Inter", size: Typography.FontSize.heading).weight(Typography.FontWeight.bold))
                     .foregroundColor(.veraDarkGreen)
             }
             
@@ -187,7 +187,7 @@ struct TargetCard: View {
                     .foregroundColor(.veraDarkGreen.opacity(0.6))
                 
                 Text("\(Int(savingsPercentage))%")
-                    .font(.system(size: Typography.FontSize.heading, weight: Typography.FontWeight.bold))
+                    .font(.custom("Inter", size: Typography.FontSize.heading).weight(Typography.FontWeight.bold))
                     .foregroundColor(.veraLightGreen)
             }
         }

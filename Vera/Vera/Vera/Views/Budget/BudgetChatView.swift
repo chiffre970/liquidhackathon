@@ -41,7 +41,7 @@ struct BudgetChatView: View {
                 
                 Button(action: sendMessage) {
                     Image(systemName: "paperplane.fill")
-                        .font(.system(size: 16))
+                        .font(.custom("Inter", size: 16))
                         .foregroundColor(.veraWhite)
                         .rotationEffect(.degrees(45))
                         .padding(12)

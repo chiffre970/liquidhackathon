@@ -20,7 +20,7 @@ struct TransactionEditModal: View {
                     VStack(spacing: 16) {
                         VStack(alignment: .leading, spacing: 8) {
                             Text("Description")
-                                .font(.system(size: Typography.FontSize.bodySmall, weight: Typography.FontWeight.medium))
+                                .font(.custom("Inter", size: Typography.FontSize.bodySmall).weight(Typography.FontWeight.medium))
                                 .foregroundColor(.veraDarkGreen.opacity(0.7))
                             
                             TextField("Enter description", text: $description)
@@ -32,7 +32,7 @@ struct TransactionEditModal: View {
                         
                         VStack(alignment: .leading, spacing: 8) {
                             Text("Amount")
-                                .font(.system(size: Typography.FontSize.bodySmall, weight: Typography.FontWeight.medium))
+                                .font(.custom("Inter", size: Typography.FontSize.bodySmall).weight(Typography.FontWeight.medium))
                                 .foregroundColor(.veraDarkGreen.opacity(0.7))
                             
                             TextField("0.00", text: $amount)
@@ -45,7 +45,7 @@ struct TransactionEditModal: View {
                         
                         VStack(alignment: .leading, spacing: 8) {
                             Text("Category")
-                                .font(.system(size: Typography.FontSize.bodySmall, weight: Typography.FontWeight.medium))
+                                .font(.custom("Inter", size: Typography.FontSize.bodySmall).weight(Typography.FontWeight.medium))
                                 .foregroundColor(.veraDarkGreen.opacity(0.7))
                             
                             ScrollView(.horizontal, showsIndicators: false) {
@@ -69,7 +69,7 @@ struct TransactionEditModal: View {
                         
                         VStack(alignment: .leading, spacing: 8) {
                             Text("Date")
-                                .font(.system(size: Typography.FontSize.bodySmall, weight: Typography.FontWeight.medium))
+                                .font(.custom("Inter", size: Typography.FontSize.bodySmall).weight(Typography.FontWeight.medium))
                                 .foregroundColor(.veraDarkGreen.opacity(0.7))
                             
                             DatePicker("", selection: $date, displayedComponents: .date)
@@ -83,7 +83,7 @@ struct TransactionEditModal: View {
                     HStack(spacing: 16) {
                         Button(action: { isPresented = false }) {
                             Text("Cancel")
-                                .font(.system(size: Typography.FontSize.body, weight: Typography.FontWeight.medium))
+                                .font(.custom("Inter", size: Typography.FontSize.body).weight(Typography.FontWeight.medium))
                                 .foregroundColor(.veraDarkGreen)
                                 .frame(maxWidth: .infinity)
                                 .padding(.vertical, 14)
@@ -93,7 +93,7 @@ struct TransactionEditModal: View {
                         
                         Button(action: saveTransaction) {
                             Text("Save")
-                                .font(.system(size: Typography.FontSize.body, weight: Typography.FontWeight.semibold))
+                                .font(.custom("Inter", size: Typography.FontSize.body).weight(Typography.FontWeight.semibold))
                                 .foregroundColor(.white)
                                 .frame(maxWidth: .infinity)
                                 .padding(.vertical, 14)
@@ -108,7 +108,7 @@ struct TransactionEditModal: View {
             .navigationBarItems(trailing: Button(action: { isPresented = false }) {
                 Image(systemName: "xmark.circle.fill")
                     .foregroundColor(.veraDarkGreen.opacity(0.3))
-                    .font(.system(size: 24))
+                    .font(.custom("Inter", size: 24))
             })
         }
         .onAppear {

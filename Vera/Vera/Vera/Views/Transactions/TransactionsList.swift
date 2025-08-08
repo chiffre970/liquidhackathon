@@ -8,7 +8,7 @@ struct TransactionsList: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             Text("Your transactions")
-                .font(.system(size: Typography.FontSize.body, weight: Typography.FontWeight.semibold))
+                .font(.custom("Inter", size: Typography.FontSize.body).weight(Typography.FontWeight.semibold))
                 .foregroundColor(.veraDarkGreen.opacity(0.7))
             
             if transactions.isEmpty {
@@ -81,13 +81,13 @@ struct TransactionRow: View {
                 .cornerRadius(DesignSystem.tinyCornerRadius)
             
             Text(String(format: "$%.2f", abs(transaction.amount)))
-                .font(.system(size: Typography.FontSize.bodySmall, weight: Typography.FontWeight.semibold))
+                .font(.custom("Inter", size: Typography.FontSize.bodySmall).weight(Typography.FontWeight.semibold))
                 .foregroundColor(transaction.amount < 0 ? .red : .green)
                 .frame(width: 80, alignment: .trailing)
             
             Button(action: onEdit) {
                 Image(systemName: "pencil")
-                    .font(.system(size: 14))
+                    .font(.custom("Inter", size: 14))
                     .foregroundColor(.veraDarkGreen.opacity(0.5))
                     .frame(width: 20, height: 20)
             }

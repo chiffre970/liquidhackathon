@@ -12,7 +12,7 @@ struct ProfileView: View {
                 if csvProcessor.importedFiles.isEmpty {
                     VStack(spacing: 20) {
                         Text("Upload your transaction CSV files to get started")
-                            .font(.headline)
+                            .font(.custom("Inter", size: 17).weight(.semibold))
                             .foregroundColor(.secondary)
                             .multilineTextAlignment(.center)
                             .padding()
@@ -28,7 +28,7 @@ struct ProfileView: View {
                     VStack(alignment: .leading, spacing: 15) {
                         HStack {
                             Text("Uploaded Files (\(csvProcessor.importedFiles.count))")
-                                .font(.headline)
+                                .font(.custom("Inter", size: 17).weight(.semibold))
                             
                             Spacer()
                             
@@ -94,12 +94,12 @@ struct ImportedFileRow: View {
             
             VStack(alignment: .leading, spacing: 2) {
                 Text(file.name)
-                    .font(.caption)
+                    .font(.custom("Inter", size: 12).weight(.regular))
                     .fontWeight(.medium)
                     .lineLimit(1)
                 
                 Text("Uploaded on \(file.importDate, style: .date)")
-                    .font(.caption2)
+                    .font(.custom("Inter", size: 11).weight(.regular))
                     .foregroundColor(.secondary)
             }
             

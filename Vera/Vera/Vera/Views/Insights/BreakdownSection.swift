@@ -32,7 +32,7 @@ struct BreakdownSection: View {
                                 Spacer()
                                 
                                 Text("$\(Int(category.amount))")
-                                    .font(.system(size: Typography.FontSize.bodySmall, weight: Typography.FontWeight.medium))
+                                    .font(.custom("Inter", size: Typography.FontSize.bodySmall).weight(Typography.FontWeight.medium))
                                     .foregroundColor(.veraDarkGreen)
                                 
                                 Text("\(Int(category.percentage))%")
@@ -52,7 +52,7 @@ struct BreakdownSection: View {
                                 .font(.veraCaption())
                                 .foregroundColor(.veraDarkGreen.opacity(0.6))
                             Text("$\(Int(cashFlow.income))")
-                                .font(.system(size: Typography.FontSize.subheading, weight: Typography.FontWeight.semibold))
+                                .font(.custom("Inter", size: Typography.FontSize.subheading).weight(Typography.FontWeight.semibold))
                                 .foregroundColor(.green)
                         }
                         
@@ -61,7 +61,7 @@ struct BreakdownSection: View {
                                 .font(.veraCaption())
                                 .foregroundColor(.veraDarkGreen.opacity(0.6))
                             Text("$\(Int(cashFlow.expenses))")
-                                .font(.system(size: Typography.FontSize.subheading, weight: Typography.FontWeight.semibold))
+                                .font(.custom("Inter", size: Typography.FontSize.subheading).weight(Typography.FontWeight.semibold))
                                 .foregroundColor(.red)
                         }
                         
@@ -72,7 +72,7 @@ struct BreakdownSection: View {
                                 .font(.veraCaption())
                                 .foregroundColor(.veraDarkGreen.opacity(0.6))
                             Text("$\(Int(cashFlow.income - cashFlow.expenses))")
-                                .font(.system(size: Typography.FontSize.subheading, weight: Typography.FontWeight.semibold))
+                                .font(.custom("Inter", size: Typography.FontSize.subheading).weight(Typography.FontWeight.semibold))
                                 .foregroundColor(cashFlow.income > cashFlow.expenses ? .green : .red)
                         }
                     }

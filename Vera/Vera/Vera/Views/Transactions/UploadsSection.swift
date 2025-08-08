@@ -6,7 +6,7 @@ struct UploadsSection: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             Text("Your uploads")
-                .font(.system(size: Typography.FontSize.body, weight: Typography.FontWeight.semibold))
+                .font(.custom("Inter", size: Typography.FontSize.body).weight(Typography.FontWeight.semibold))
                 .foregroundColor(.veraDarkGreen.opacity(0.7))
             
             if csvProcessor.importedFiles.isEmpty {
@@ -18,7 +18,7 @@ struct UploadsSection: View {
                 ForEach(csvProcessor.importedFiles, id: \.id) { file in
                     HStack {
                         Image(systemName: "doc.text")
-                            .font(.system(size: 14))
+                            .font(.custom("Inter", size: 14))
                             .foregroundColor(.veraLightGreen)
                         
                         Text(file.name)
@@ -35,7 +35,7 @@ struct UploadsSection: View {
                             deleteFile(file)
                         }) {
                             Image(systemName: "trash")
-                                .font(.system(size: 14))
+                                .font(.custom("Inter", size: 14))
                                 .foregroundColor(.red.opacity(0.6))
                         }
                     }

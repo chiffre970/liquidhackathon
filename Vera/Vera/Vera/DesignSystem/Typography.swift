@@ -2,6 +2,8 @@ import SwiftUI
 
 struct Typography {
     static func registerFonts() {
+        // Inter font registration would happen here if custom font files are added
+        // For now, using "Inter" assumes system availability or fallback to similar font
     }
     
     enum FontSize {
@@ -24,26 +26,26 @@ struct Typography {
 
 extension Font {
     static func veraTitle() -> Font {
-        return .system(size: Typography.FontSize.title, weight: Typography.FontWeight.bold, design: .default)
+        return .custom("Inter", size: Typography.FontSize.title).weight(Typography.FontWeight.bold)
     }
     
     static func veraHeading() -> Font {
-        return .system(size: Typography.FontSize.heading, weight: Typography.FontWeight.semibold, design: .default)
+        return .custom("Inter", size: Typography.FontSize.heading).weight(Typography.FontWeight.semibold)
     }
     
     static func veraSubheading() -> Font {
-        return .system(size: Typography.FontSize.subheading, weight: Typography.FontWeight.semibold, design: .default)
+        return .custom("Inter", size: Typography.FontSize.subheading).weight(Typography.FontWeight.semibold)
     }
     
     static func veraBody() -> Font {
-        return .system(size: Typography.FontSize.body, weight: Typography.FontWeight.regular, design: .default)
+        return .custom("Inter", size: Typography.FontSize.body).weight(Typography.FontWeight.regular)
     }
     
     static func veraBodySmall() -> Font {
-        return .system(size: Typography.FontSize.bodySmall, weight: Typography.FontWeight.regular, design: .default)
+        return .custom("Inter", size: Typography.FontSize.bodySmall).weight(Typography.FontWeight.regular)
     }
     
     static func veraCaption() -> Font {
-        return .system(size: Typography.FontSize.caption, weight: Typography.FontWeight.light, design: .default)
+        return .custom("Inter", size: Typography.FontSize.caption).weight(Typography.FontWeight.light)
     }
 }

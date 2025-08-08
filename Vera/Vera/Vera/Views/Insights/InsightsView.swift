@@ -44,7 +44,7 @@ struct InsightsView: View {
                 } else {
                     VStack(spacing: 16) {
                         Image(systemName: "chart.pie")
-                            .font(.system(size: 48))
+                            .font(.custom("Inter", size: 48))
                             .foregroundColor(.veraLightGreen.opacity(0.4))
                         
                         Text("No insights available yet")
@@ -115,7 +115,7 @@ struct MonthSelector: View {
         HStack {
             Button(action: { changeMonth(-1) }) {
                 Image(systemName: "chevron.left")
-                    .font(.system(size: 16, weight: .medium))
+                    .font(.custom("Inter", size: 16).weight(.medium))
                     .foregroundColor(.veraLightGreen)
             }
             
@@ -129,7 +129,7 @@ struct MonthSelector: View {
             
             Button(action: { changeMonth(1) }) {
                 Image(systemName: "chevron.right")
-                    .font(.system(size: 16, weight: .medium))
+                    .font(.custom("Inter", size: 16).weight(.medium))
                     .foregroundColor(isCurrentOrFutureMonth ? .veraGrey.opacity(0.4) : .veraLightGreen)
             }
             .disabled(isCurrentOrFutureMonth)

@@ -14,7 +14,7 @@ struct SankeyDiagram: View {
                 )
                 
                 let incomeText = Text("Income\n$\(Int(data.income))")
-                    .font(.system(size: 12, weight: .semibold))
+                    .font(.custom("Inter", size: 12).weight(.semibold))
                     .foregroundColor(.white)
                 
                 context.draw(incomeText, at: CGPoint(x: incomeRect.midX, y: incomeRect.midY))

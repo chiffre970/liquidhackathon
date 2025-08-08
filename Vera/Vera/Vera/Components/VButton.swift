@@ -37,7 +37,7 @@ struct VButton: View {
     var body: some View {
         Button(action: action) {
             Text(title)
-                .font(.system(size: Typography.FontSize.body, weight: Typography.FontWeight.semibold))
+                .font(.custom("Inter", size: Typography.FontSize.body).weight(Typography.FontWeight.semibold))
                 .foregroundColor(foregroundColor)
                 .frame(maxWidth: isFullWidth ? .infinity : nil)
                 .padding(.horizontal, 24)

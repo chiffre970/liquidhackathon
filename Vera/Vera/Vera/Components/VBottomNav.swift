@@ -58,7 +58,7 @@ private struct TabButton: View {
                     }
                     
                     Image(systemName: iconName)
-                        .font(.system(size: 18, weight: .medium))
+                        .font(.custom("Inter", size: 18).weight(.medium))
                         .foregroundColor(isSelected ? .veraLightGreen : .veraWhite.opacity(0.7))
                 }
                 .frame(maxWidth: .infinity)
