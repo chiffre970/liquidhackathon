@@ -2,22 +2,22 @@ import SwiftUI
 import UniformTypeIdentifiers
 
 struct ProfileView: View {
-    @StateObject private var csvProcessor = CSVProcessor()
+    @EnvironmentObject var csvProcessor: CSVProcessor
     @State private var showingFilePicker = false
     @State private var showingErrorAlert = false
     
     var body: some View {
         NavigationView {
             VStack(spacing: 20) {
-                if csvProcessor.transactions.isEmpty {
+                if csvProcessor.importedFiles.isEmpty {
                     VStack(spacing: 20) {
-                        Text("Import your transaction CSV files to get started")
+                        Text("Upload your transaction CSV files to get started")
                             .font(.headline)
                             .foregroundColor(.secondary)
                             .multilineTextAlignment(.center)
                             .padding()
                         
-                        Button("Import CSV") {
+                        Button("Upload CSV") {
                             showingFilePicker = true
                         }
                         .buttonStyle(.borderedProminent)
@@ -27,22 +27,23 @@ struct ProfileView: View {
                 } else {
                     VStack(alignment: .leading, spacing: 15) {
                         HStack {
-                            Text("Transactions (\(csvProcessor.transactions.count))")
+                            Text("Uploaded Files (\(csvProcessor.importedFiles.count))")
                                 .font(.headline)
                             
                             Spacer()
                             
-                            Button("Import More") {
+                            Button("Upload More") {
                                 showingFilePicker = true
                             }
                             .buttonStyle(.bordered)
                             .tint(.green)
                         }
                         
-                        List(csvProcessor.transactions) { transaction in
-                            TransactionRow(transaction: transaction)
+                        LazyVStack(spacing: 8) {
+                            ForEach(csvProcessor.importedFiles, id: \.id) { file in
+                                ImportedFileRow(file: file)
+                            }
                         }
-                        .listStyle(.plain)
                     }
                 }
                 
@@ -82,47 +83,31 @@ struct ProfileView: View {
     }
 }
 
-struct TransactionRow: View {
-    let transaction: Transaction
+struct ImportedFileRow: View {
+    let file: ImportedFile
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            HStack {
-                Text(transaction.description)
-                    .font(.body)
+        HStack {
+            Image(systemName: "doc.text")
+                .foregroundColor(.green)
+                .frame(width: 20)
+            
+            VStack(alignment: .leading, spacing: 2) {
+                Text(file.name)
+                    .font(.caption)
+                    .fontWeight(.medium)
                     .lineLimit(1)
                 
-                Spacer()
-                
-                Text(String(format: "$%.2f", abs(transaction.amount)))
-                    .font(.body.weight(.medium))
-                    .foregroundColor(transaction.amount >= 0 ? .green : .red)
+                Text("Uploaded on \(file.importDate, style: .date)")
+                    .font(.caption2)
+                    .foregroundColor(.secondary)
             }
             
-            HStack {
-                Text(transaction.date, style: .date)
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-                
-                if let counterparty = transaction.counterparty {
-                    Text("• \(counterparty)")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                }
-                
-                Spacer()
-                
-                if let category = transaction.category {
-                    Text(category)
-                        .font(.caption)
-                        .padding(.horizontal, 8)
-                        .padding(.vertical, 2)
-                        .background(Color.green.opacity(0.1))
-                        .foregroundColor(.green)
-                        .cornerRadius(4)
-                }
-            }
+            Spacer()
         }
-        .padding(.vertical, 4)
+        .padding(.horizontal, 12)
+        .padding(.vertical, 6)
+        .background(Color.green.opacity(0.05))
+        .cornerRadius(6)
     }
 }

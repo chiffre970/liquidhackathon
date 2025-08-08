@@ -1,6 +1,7 @@
 import SwiftUI
 
 struct InsightsView: View {
+    @EnvironmentObject var csvProcessor: CSVProcessor
     @State private var selectedView: InsightType = .insights
     
     enum InsightType: String, CaseIterable {
@@ -21,9 +22,9 @@ struct InsightsView: View {
                 
                 switch selectedView {
                 case .insights:
-                    InsightsContentView()
+                    InsightsContentView(csvProcessor: csvProcessor)
                 case .budget:
-                    BudgetContentView()
+                    BudgetContentView(csvProcessor: csvProcessor)
                 }
                 
                 Spacer()
@@ -35,25 +36,67 @@ struct InsightsView: View {
 }
 
 struct InsightsContentView: View {
+    @ObservedObject var csvProcessor: CSVProcessor
+    
     var body: some View {
         VStack(spacing: 20) {
-            Text("Go to the profile page and add your transactions to get started!")
-                .font(.body)
-                .foregroundColor(.secondary)
-                .multilineTextAlignment(.center)
+            if csvProcessor.importedFiles.isEmpty {
+                Text("Go to the profile page and upload your CSV files to get started!")
+                    .font(.body)
+                    .foregroundColor(.secondary)
+                    .multilineTextAlignment(.center)
+                    .padding()
+            } else {
+                VStack(spacing: 15) {
+                    Text("Ready to analyze your transactions!")
+                        .font(.headline)
+                        .foregroundColor(.primary)
+                    
+                    Text("You have \(csvProcessor.importedFiles.count) CSV file\(csvProcessor.importedFiles.count == 1 ? "" : "s") uploaded.")
+                        .font(.body)
+                        .foregroundColor(.secondary)
+                    
+                    Button("Analyze Transactions") {
+                        // TODO: Trigger LFM2 analysis
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .tint(.green)
+                }
                 .padding()
+            }
         }
     }
 }
 
 struct BudgetContentView: View {
+    @ObservedObject var csvProcessor: CSVProcessor
+    
     var body: some View {
         VStack(spacing: 20) {
-            Text("Go to the profile page and add your transactions to get started!")
-                .font(.body)
-                .foregroundColor(.secondary)
-                .multilineTextAlignment(.center)
+            if csvProcessor.importedFiles.isEmpty {
+                Text("Go to the profile page and upload your CSV files to get started!")
+                    .font(.body)
+                    .foregroundColor(.secondary)
+                    .multilineTextAlignment(.center)
+                    .padding()
+            } else {
+                VStack(spacing: 15) {
+                    Text("Ready to create your budget!")
+                        .font(.headline)
+                        .foregroundColor(.primary)
+                    
+                    Text("You have \(csvProcessor.importedFiles.count) CSV file\(csvProcessor.importedFiles.count == 1 ? "" : "s") uploaded.")
+                        .font(.body)
+                        .foregroundColor(.secondary)
+                    
+                    Button("Generate Budget Recommendations") {
+                        // TODO: Trigger LFM2 budget analysis
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .tint(.green)
+                }
                 .padding()
+            }
         }
     }
 }
