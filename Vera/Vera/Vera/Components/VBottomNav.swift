@@ -20,12 +20,6 @@ struct VBottomNav: View {
         .padding(.horizontal, DesignSystem.padding)
         .padding(.vertical, 12)
         .background(Color.veraWhite)
-        .overlay(
-            Rectangle()
-                .fill(Color.veraGrey.opacity(0.3))
-                .frame(height: 1),
-            alignment: .top
-        )
     }
 }
 

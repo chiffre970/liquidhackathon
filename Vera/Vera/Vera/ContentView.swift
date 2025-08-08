@@ -16,19 +16,18 @@ struct ContentView: View {
             Color.veraWhite.ignoresSafeArea()
             
             VStack(spacing: 0) {
-                Group {
-                    switch selectedTab {
-                    case 0:
-                        TransactionsView()
-                    case 1:
-                        InsightsView()
-                    case 2:
-                        BudgetView()
-                    default:
-                        TransactionsView()
-                    }
+                ZStack {
+                    TransactionsView()
+                        .opacity(selectedTab == 0 ? 1 : 0)
+                    
+                    InsightsView()
+                        .opacity(selectedTab == 1 ? 1 : 0)
+                    
+                    BudgetView()
+                        .opacity(selectedTab == 2 ? 1 : 0)
                 }
                 .frame(maxHeight: .infinity)
+                .animation(nil, value: selectedTab)
                 
                 VBottomNav(selectedTab: $selectedTab, tabs: [
                     (icon: "transaction", label: "Transactions"),
