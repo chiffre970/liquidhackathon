@@ -1,5 +1,12 @@
 import SwiftUI
 
+extension Calendar {
+    func startOfMonth(for date: Date) -> Date {
+        let components = dateComponents([.year, .month], from: date)
+        return self.date(from: components) ?? date
+    }
+}
+
 struct InsightsView: View {
     @EnvironmentObject var csvProcessor: CSVProcessor
     @State private var selectedMonth = Date()
@@ -97,6 +104,13 @@ struct MonthSelector: View {
         return formatter
     }
     
+    private var isCurrentOrFutureMonth: Bool {
+        let calendar = Calendar.current
+        let currentMonth = calendar.startOfMonth(for: Date())
+        let selectedMonthStart = calendar.startOfMonth(for: selectedMonth)
+        return selectedMonthStart >= currentMonth
+    }
+    
     var body: some View {
         HStack {
             Button(action: { changeMonth(-1) }) {
@@ -116,8 +130,9 @@ struct MonthSelector: View {
             Button(action: { changeMonth(1) }) {
                 Image(systemName: "chevron.right")
                     .font(.system(size: 16, weight: .medium))
-                    .foregroundColor(.veraLightGreen)
+                    .foregroundColor(isCurrentOrFutureMonth ? .veraGrey.opacity(0.4) : .veraLightGreen)
             }
+            .disabled(isCurrentOrFutureMonth)
         }
         .padding()
         .background(Color.veraWhite)

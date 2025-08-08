@@ -42,25 +42,19 @@ private struct TabButton: View {
     
     var body: some View {
         Button(action: action) {
-            VStack(spacing: 4) {
-                ZStack {
-                    if isSelected {
-                        RoundedRectangle(cornerRadius: 12)
-                            .fill(Color.veraLightGreen)
-                            .frame(width: 48, height: 32)
-                            .matchedGeometryEffect(id: "tab_indicator", in: namespace)
-                    }
-                    
-                    Image(systemName: iconName)
-                        .font(.system(size: 20, weight: isSelected ? .semibold : .regular))
-                        .foregroundColor(isSelected ? .veraWhite : .veraDarkGreen.opacity(0.5))
+            ZStack {
+                if isSelected {
+                    RoundedRectangle(cornerRadius: 12)
+                        .fill(Color.veraLightGreen)
+                        .frame(width: 48, height: 32)
+                        .matchedGeometryEffect(id: "tab_indicator", in: namespace)
                 }
-                .frame(height: 32)
                 
-                Text(label)
-                    .font(.veraCaption())
-                    .foregroundColor(isSelected ? .veraDarkGreen : .veraDarkGreen.opacity(0.5))
+                Image(systemName: iconName)
+                    .font(.system(size: 20, weight: isSelected ? .semibold : .regular))
+                    .foregroundColor(isSelected ? .veraWhite : .veraDarkGreen.opacity(0.5))
             }
+            .frame(height: 32)
             .frame(maxWidth: .infinity)
         }
         .buttonStyle(PlainButtonStyle())
