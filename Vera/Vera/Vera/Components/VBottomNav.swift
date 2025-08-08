@@ -3,7 +3,6 @@ import SwiftUI
 struct VBottomNav: View {
     @Binding var selectedTab: Int
     let tabs: [(icon: String, label: String)]
-    @Namespace private var animationNamespace
     
     var body: some View {
         HStack(spacing: 0) {
@@ -12,11 +11,8 @@ struct VBottomNav: View {
                     icon: tab.icon,
                     label: tab.label,
                     isSelected: selectedTab == index,
-                    namespace: animationNamespace,
                     action: {
-                        withAnimation(DesignSystem.Animation.spring) {
-                            selectedTab = index
-                        }
+                        selectedTab = index
                     }
                 )
             }
@@ -37,7 +33,6 @@ private struct TabButton: View {
     let icon: String
     let label: String
     let isSelected: Bool
-    let namespace: Namespace.ID
     let action: () -> Void
     
     var body: some View {
@@ -47,7 +42,6 @@ private struct TabButton: View {
                     RoundedRectangle(cornerRadius: 12)
                         .fill(Color.veraLightGreen)
                         .frame(width: 48, height: 32)
-                        .matchedGeometryEffect(id: "tab_indicator", in: namespace)
                 }
                 
                 Image(systemName: iconName)
