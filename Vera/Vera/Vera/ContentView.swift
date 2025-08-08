@@ -9,21 +9,34 @@ import SwiftUI
 import CoreData
 
 struct ContentView: View {
+    @State private var selectedTab = 0
+    
     var body: some View {
-        TabView {
-            ProfileView()
-                .tabItem {
-                    Image(systemName: "person.circle")
-                    Text("Profile")
-                }
+        ZStack {
+            Color.veraWhite.ignoresSafeArea()
             
-            InsightsView()
-                .tabItem {
-                    Image(systemName: "chart.bar")
-                    Text("Insights")
+            VStack(spacing: 0) {
+                Group {
+                    switch selectedTab {
+                    case 0:
+                        TransactionsView()
+                    case 1:
+                        InsightsView()
+                    case 2:
+                        BudgetView()
+                    default:
+                        TransactionsView()
+                    }
                 }
+                .frame(maxHeight: .infinity)
+                
+                VBottomNav(selectedTab: $selectedTab, tabs: [
+                    (icon: "transaction", label: "Transactions"),
+                    (icon: "insights", label: "Insights"),
+                    (icon: "budget", label: "Budget")
+                ])
+            }
         }
-        .tint(.green)
     }
 }
 

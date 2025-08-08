@@ -1,0 +1,53 @@
+import SwiftUI
+
+struct UploadsSection: View {
+    @EnvironmentObject var csvProcessor: CSVProcessor
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Your uploads")
+                .font(.system(size: Typography.FontSize.body, weight: Typography.FontWeight.semibold))
+                .foregroundColor(.veraDarkGreen.opacity(0.7))
+            
+            if csvProcessor.importedFiles.isEmpty {
+                Text("No files uploaded yet")
+                    .font(.veraBodySmall())
+                    .foregroundColor(.veraDarkGreen.opacity(0.4))
+                    .padding(.vertical, 8)
+            } else {
+                ForEach(csvProcessor.importedFiles) { file in
+                    HStack {
+                        Image(systemName: "doc.text")
+                            .font(.system(size: 14))
+                            .foregroundColor(.veraLightGreen)
+                        
+                        Text(file.name)
+                            .font(.veraBodySmall())
+                            .foregroundColor(.veraDarkGreen)
+                        
+                        Spacer()
+                        
+                        Text(file.importDate, style: .date)
+                            .font(.veraCaption())
+                            .foregroundColor(.veraDarkGreen.opacity(0.6))
+                        
+                        Button(action: { 
+                            deleteFile(file)
+                        }) {
+                            Image(systemName: "trash")
+                                .font(.system(size: 14))
+                                .foregroundColor(.red.opacity(0.6))
+                        }
+                    }
+                    .padding(12)
+                    .background(Color.veraWhite)
+                    .cornerRadius(DesignSystem.tinyCornerRadius)
+                }
+            }
+        }
+    }
+    
+    private func deleteFile(_ file: CSVProcessor.ImportedFile) {
+        csvProcessor.importedFiles.removeAll { $0.id == file.id }
+    }
+}
