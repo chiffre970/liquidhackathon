@@ -61,6 +61,7 @@ private struct TabButton: View {
                         .font(.custom("Inter", size: 18).weight(.medium))
                         .foregroundColor(isSelected ? .veraLightGreen : .veraWhite.opacity(0.7))
                 }
+                .animation(.none, value: isSelected)
                 .frame(maxWidth: .infinity)
                 .frame(height: 36)
             }
