@@ -311,6 +311,150 @@ struct TransactionRow: View {
 }
 ```
 
+#### 2.4 TransactionEditModal Component
+```swift
+struct TransactionEditModal: View {
+    @State var transaction: Transaction
+    @Binding var isPresented: Bool
+    let onSave: (Transaction) -> Void
+    
+    @State private var description: String = ""
+    @State private var amount: String = ""
+    @State private var selectedCategory: String = ""
+    @State private var date: Date = Date()
+    
+    let categories = ["Housing", "Food", "Transportation", "Healthcare", 
+                     "Entertainment", "Shopping", "Savings", "Other"]
+    
+    var body: some View {
+        VContainer {
+            VStack(spacing: 20) {
+                // Header
+                HStack {
+                    Text("Edit Transaction")
+                        .font(.custom("Inter-Bold", size: 24))
+                        .foregroundColor(.veraDarkGreen)
+                    
+                    Spacer()
+                    
+                    Button(action: { isPresented = false }) {
+                        Image(systemName: "xmark.circle.fill")
+                            .foregroundColor(.veraDarkGreen.opacity(0.3))
+                            .font(.system(size: 24))
+                    }
+                }
+                
+                // Form fields
+                VStack(spacing: 16) {
+                    // Description field
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("Description")
+                            .font(.custom("Inter-Medium", size: 14))
+                            .foregroundColor(.veraDarkGreen.opacity(0.7))
+                        
+                        TextField("Enter description", text: $description)
+                            .font(.custom("Inter-Regular", size: 16))
+                            .padding(12)
+                            .background(Color.veraWhite)
+                            .cornerRadius(8)
+                    }
+                    
+                    // Amount field
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("Amount")
+                            .font(.custom("Inter-Medium", size: 14))
+                            .foregroundColor(.veraDarkGreen.opacity(0.7))
+                        
+                        TextField("0.00", text: $amount)
+                            .font(.custom("Inter-Regular", size: 16))
+                            .keyboardType(.decimalPad)
+                            .padding(12)
+                            .background(Color.veraWhite)
+                            .cornerRadius(8)
+                    }
+                    
+                    // Category picker
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("Category")
+                            .font(.custom("Inter-Medium", size: 14))
+                            .foregroundColor(.veraDarkGreen.opacity(0.7))
+                        
+                        ScrollView(.horizontal, showsIndicators: false) {
+                            HStack(spacing: 8) {
+                                ForEach(categories, id: \.self) { category in
+                                    Button(action: { selectedCategory = category }) {
+                                        Text(category)
+                                            .font(.custom("Inter-Regular", size: 14))
+                                            .padding(.horizontal, 16)
+                                            .padding(.vertical, 8)
+                                            .background(selectedCategory == category ? 
+                                                      Color.veraLightGreen : Color.veraWhite)
+                                            .foregroundColor(selectedCategory == category ? 
+                                                           .white : .veraDarkGreen)
+                                            .cornerRadius(20)
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    
+                    // Date picker
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("Date")
+                            .font(.custom("Inter-Medium", size: 14))
+                            .foregroundColor(.veraDarkGreen.opacity(0.7))
+                        
+                        DatePicker("", selection: $date, displayedComponents: .date)
+                            .datePickerStyle(CompactDatePickerStyle())
+                            .labelsHidden()
+                    }
+                }
+                
+                Spacer()
+                
+                // Action buttons
+                HStack(spacing: 16) {
+                    Button(action: { isPresented = false }) {
+                        Text("Cancel")
+                            .font(.custom("Inter-Medium", size: 16))
+                            .foregroundColor(.veraDarkGreen)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 14)
+                            .background(Color.veraWhite)
+                            .cornerRadius(12)
+                    }
+                    
+                    Button(action: saveTransaction) {
+                        Text("Save")
+                            .font(.custom("Inter-Semibold", size: 16))
+                            .foregroundColor(.white)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 14)
+                            .background(Color.veraLightGreen)
+                            .cornerRadius(12)
+                    }
+                }
+            }
+        }
+        .onAppear {
+            description = transaction.description
+            amount = String(format: "%.2f", abs(transaction.amount))
+            selectedCategory = transaction.category ?? "Other"
+            date = transaction.date
+        }
+    }
+    
+    func saveTransaction() {
+        transaction.description = description
+        transaction.amount = Double(amount) ?? 0
+        transaction.category = selectedCategory
+        transaction.date = date
+        onSave(transaction)
+        isPresented = false
+    }
+}
+```
+
 ### Phase 3: Insights Page - Detailed
 
 #### 3.1 InsightsView Structure
@@ -590,7 +734,8 @@ Vera/
 │   ├── Transactions/
 │   │   ├── TransactionsView.swift
 │   │   ├── UploadsSection.swift
-│   │   └── TransactionsList.swift
+│   │   ├── TransactionsList.swift
+│   │   └── TransactionEditModal.swift
 │   ├── Insights/
 │   │   ├── InsightsView.swift
 │   │   ├── SankeyDiagram.swift
@@ -615,7 +760,8 @@ Vera/
         ├── budget.svg
         ├── add.svg
         ├── delete.svg
-        └── send.svg
+        ├── send.svg
+        └── pen.svg
 ```
 
 ## Development Priority
