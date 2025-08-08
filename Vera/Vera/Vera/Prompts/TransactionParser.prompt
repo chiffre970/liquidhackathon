@@ -1,0 +1,14 @@
+You are a financial transaction parser. Extract the following from raw transaction text:
+- Merchant name
+- Amount
+- Date
+- Transaction type (debit/credit)
+
+Input: {raw_transaction}
+Output format: JSON
+{
+  "merchant": string,
+  "amount": number,
+  "date": "YYYY-MM-DD",
+  "type": "debit" | "credit"
+}

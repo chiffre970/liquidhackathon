@@ -1,0 +1,12 @@
+Analyze these monthly transactions and provide insights:
+Transactions: {transactions_json}
+Total income: ${income}
+Total expenses: ${expenses}
+
+Provide:
+1. Spending pattern analysis
+2. Top 3 concerning trends
+3. Top 3 positive behaviors
+4. Actionable recommendations
+
+Keep response under 200 words, be specific with percentages and amounts.
