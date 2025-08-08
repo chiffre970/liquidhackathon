@@ -11,15 +11,32 @@ struct VBottomNav: View {
                     icon: tab.icon,
                     label: tab.label,
                     isSelected: selectedTab == index,
+                    showDivider: shouldShowDivider(for: index),
                     action: {
                         selectedTab = index
                     }
                 )
             }
         }
+        .padding(.horizontal, 8)
+        .padding(.vertical, 8)
+        .background(
+            RoundedRectangle(cornerRadius: 16)
+                .fill(Color.veraDarkGreen)
+        )
         .padding(.horizontal, DesignSystem.padding)
         .padding(.vertical, 12)
         .background(Color.veraWhite)
+    }
+    
+    private func shouldShowDivider(for index: Int) -> Bool {
+        // Show divider after this button if:
+        // - Not the last button
+        // - This button is not selected
+        // - Next button is not selected
+        return index < tabs.count - 1 && 
+               selectedTab != index && 
+               selectedTab != index + 1
     }
 }
 
@@ -27,25 +44,34 @@ private struct TabButton: View {
     let icon: String
     let label: String
     let isSelected: Bool
+    let showDivider: Bool
     let action: () -> Void
     
     var body: some View {
-        Button(action: action) {
-            ZStack {
-                if isSelected {
-                    RoundedRectangle(cornerRadius: 12)
-                        .fill(Color.veraLightGreen)
-                        .frame(width: 48, height: 32)
+        HStack(spacing: 0) {
+            Button(action: action) {
+                ZStack {
+                    if isSelected {
+                        RoundedRectangle(cornerRadius: 12)
+                            .fill(Color.veraWhite)
+                            .frame(height: 36)
+                    }
+                    
+                    Image(systemName: iconName)
+                        .font(.system(size: 18, weight: .medium))
+                        .foregroundColor(isSelected ? .veraLightGreen : .veraWhite.opacity(0.7))
                 }
-                
-                Image(systemName: iconName)
-                    .font(.system(size: 20, weight: isSelected ? .semibold : .regular))
-                    .foregroundColor(isSelected ? .veraWhite : .veraDarkGreen.opacity(0.5))
+                .frame(maxWidth: .infinity)
+                .frame(height: 36)
             }
-            .frame(height: 32)
-            .frame(maxWidth: .infinity)
+            .buttonStyle(PlainButtonStyle())
+            
+            if showDivider {
+                Rectangle()
+                    .fill(Color.veraWhite.opacity(0.3))
+                    .frame(width: 1, height: 20)
+            }
         }
-        .buttonStyle(PlainButtonStyle())
     }
     
     private var iconName: String {
