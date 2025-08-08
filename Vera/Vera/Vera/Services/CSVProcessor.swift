@@ -1,6 +1,6 @@
 import Foundation
 
-struct ImportedFile {
+struct ImportedFile: Identifiable {
     let id = UUID()
     let name: String
     let url: URL
@@ -11,6 +11,7 @@ class CSVProcessor: ObservableObject {
     @Published var isProcessing = false
     @Published var errorMessage: String?
     @Published var importedFiles: [ImportedFile] = []
+    @Published var parsedTransactions: [Transaction] = []
     
     func importCSV(from url: URL) {
         print("📁 Starting CSV upload from: \(url.lastPathComponent)")
@@ -33,7 +34,7 @@ class CSVProcessor: ObservableObject {
         
         do {
             print("📖 Reading file content...")
-            let content = try String(contentsOf: url)
+            let content = try String(contentsOf: url, encoding: .utf8)
             print("✅ File content read successfully. Size: \(content.count) characters")
             
             DispatchQueue.main.async {

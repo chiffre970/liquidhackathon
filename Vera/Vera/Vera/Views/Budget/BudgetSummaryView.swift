@@ -72,12 +72,16 @@ struct BudgetVisualization: View {
                     with: .color(.veraLightGreen)
                 )
                 
-                let incomeText = Text("Monthly\nBudget\n$\(Int(budget.monthlyTarget))")
-                    .font(.system(size: 14, weight: .bold))
-                    .foregroundColor(.white)
-                    .multilineTextAlignment(.center)
-                
-                context.draw(incomeText, at: CGPoint(x: incomeRect.midX, y: incomeRect.midY))
+                // Draw income text
+                let incomeAmount = "$\(Int(budget.monthlyTarget))"
+                let resolvedIncomeText = context.resolve(Text(incomeAmount))
+                let incomeTextRect = CGRect(
+                    x: incomeRect.midX - 40,
+                    y: incomeRect.midY - 10,
+                    width: 80,
+                    height: 20
+                )
+                context.draw(resolvedIncomeText, in: incomeTextRect)
                 
                 let categoriesStartY = incomeRect.maxY + 30
                 let categoryWidth: CGFloat = 70
@@ -113,12 +117,16 @@ struct BudgetVisualization: View {
                         with: .color(.veraDarkGreen.opacity(0.8))
                     )
                     
-                    let categoryText = Text("\(category.name)\n$\(Int(category.amount))")
-                        .font(.system(size: 10))
-                        .foregroundColor(.white)
-                        .multilineTextAlignment(.center)
-                    
-                    context.draw(categoryText, at: CGPoint(x: categoryRect.midX, y: categoryRect.midY))
+                    // Draw category text
+                    let categoryAmount = "$\(Int(category.amount))"
+                    let resolvedCategoryText = context.resolve(Text(categoryAmount))
+                    let textRect = CGRect(
+                        x: categoryRect.minX,
+                        y: categoryRect.midY - 10,
+                        width: categoryRect.width,
+                        height: 20
+                    )
+                    context.draw(resolvedCategoryText, in: textRect)
                 }
             }
         }

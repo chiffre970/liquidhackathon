@@ -24,7 +24,7 @@ struct BudgetChatView: View {
                     }
                     .padding(.bottom, 10)
                 }
-                .onChange(of: messages.count) { _ in
+                .onChange(of: messages.count) { _, _ in
                     withAnimation {
                         proxy.scrollTo(messages.last?.id, anchor: .bottom)
                     }

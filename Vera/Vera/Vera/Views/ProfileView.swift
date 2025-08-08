@@ -76,7 +76,7 @@ struct ProfileView: View {
             } message: {
                 Text(csvProcessor.errorMessage ?? "Unknown error occurred")
             }
-            .onChange(of: csvProcessor.errorMessage) { errorMessage in
+            .onChange(of: csvProcessor.errorMessage) { _, errorMessage in
                 showingErrorAlert = errorMessage != nil
             }
         }

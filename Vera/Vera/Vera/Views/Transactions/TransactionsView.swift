@@ -33,10 +33,8 @@ struct TransactionsView: View {
         }
         .sheet(isPresented: $showingFilePicker) {
             DocumentPicker { url in
-                Task {
-                    await csvProcessor.importCSV(from: url)
-                    loadTransactions()
-                }
+                csvProcessor.importCSV(from: url)
+                loadTransactions()
             }
         }
         .onAppear {

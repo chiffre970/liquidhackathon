@@ -66,12 +66,16 @@ struct SankeyDiagram: View {
                         with: .color(.veraDarkGreen.opacity(0.8))
                     )
                     
-                    let categoryText = Text("\(category.name)\n\(Int(category.percentage))%")
-                        .font(.system(size: 10))
-                        .foregroundColor(.white)
-                        .multilineTextAlignment(.center)
-                    
-                    context.draw(categoryText, at: CGPoint(x: categoryRect.midX, y: categoryRect.midY))
+                    // Draw category text
+                    let categoryLabel = "\(category.name)"
+                    let resolvedText = context.resolve(Text(categoryLabel))
+                    let textRect = CGRect(
+                        x: categoryRect.minX,
+                        y: categoryRect.midY - 10,
+                        width: categoryRect.width,
+                        height: 20
+                    )
+                    context.draw(resolvedText, in: textRect)
                 }
             }
         }

@@ -15,7 +15,7 @@ struct UploadsSection: View {
                     .foregroundColor(.veraDarkGreen.opacity(0.4))
                     .padding(.vertical, 8)
             } else {
-                ForEach(csvProcessor.importedFiles) { file in
+                ForEach(csvProcessor.importedFiles, id: \.id) { file in
                     HStack {
                         Image(systemName: "doc.text")
                             .font(.system(size: 14))
@@ -47,7 +47,7 @@ struct UploadsSection: View {
         }
     }
     
-    private func deleteFile(_ file: CSVProcessor.ImportedFile) {
+    private func deleteFile(_ file: ImportedFile) {
         csvProcessor.importedFiles.removeAll { $0.id == file.id }
     }
 }
