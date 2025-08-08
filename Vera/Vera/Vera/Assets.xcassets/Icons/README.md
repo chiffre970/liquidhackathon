@@ -1,16 +1,19 @@
 # Icons Directory
 
-Place the following SVG icons in this directory:
+This app uses SF Symbols (Apple's built-in icon library) instead of custom icons.
 
-- `transaction.svg` - Tab bar icon for Transactions page (chart/list icon)
-- `insights.svg` - Tab bar icon for Insights page (lightbulb icon)  
-- `budget.svg` - Tab bar icon for Budget page (dollar sign icon)
-- `add.svg` - Plus button for adding CSV files
-- `delete.svg` - Delete/trash icon for removing files
-- `send.svg` - Send button in chat interface (arrow icon)
+## SF Symbols Used:
+- `list.bullet.rectangle` - Tab bar icon for Transactions page
+- `chart.pie.fill` - Tab bar icon for Insights page  
+- `dollarsign.circle.fill` - Tab bar icon for Budget page
+- `plus.circle.fill` - Plus button for adding CSV files
+- `trash` - Delete icon for removing files
+- `paperplane.fill` - Send button in chat interface
+- `pencil` - Edit icon for transaction editing
 
-## Icon Requirements
-- Format: SVG
-- Size: 24x24px base size (will be scaled as needed)
-- Colors: Use currentColor for dynamic tinting
-- Style: Simple, outlined icons matching iOS design language
+## No Custom Icons Required
+All icons are provided by iOS through SF Symbols, ensuring:
+- Consistent design with iOS
+- Automatic dark mode support
+- Dynamic type scaling
+- Perfect rendering at all sizes

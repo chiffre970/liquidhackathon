@@ -83,12 +83,7 @@ Vera/
 │   └── DataManager.swift
 └── Assets.xcassets/
     └── Icons/
-        ├── transaction.svg
-        ├── insights.svg
-        ├── budget.svg
-        ├── add.svg
-        ├── delete.svg
-        └── send.svg
+        └── (Using SF Symbols - no custom icons needed)
 ```
 
 ## Development Priority

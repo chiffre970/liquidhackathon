@@ -19,14 +19,14 @@ extension Color {
 ```
 
 ### Icons
-Location: `/Vera/Vera/Assets.xcassets/Icons/`
-- `transaction.svg` - Tab bar icon for Transactions page
-- `insights.svg` - Tab bar icon for Insights page  
-- `budget.svg` - Tab bar icon for Budget page
-- `add.svg` - Plus button for adding CSV files
-- `delete.svg` - Delete/trash icon for removing files
-- `send.svg` - Send button in chat interface
-- `pen.svg` - Edit icon for transaction editing
+Using SF Symbols (built-in iOS icons):
+- `list.bullet.rectangle` - Tab bar icon for Transactions page
+- `chart.pie.fill` - Tab bar icon for Insights page  
+- `dollarsign.circle.fill` - Tab bar icon for Budget page
+- `plus.circle.fill` - Plus button for adding CSV files
+- `trash` - Delete icon for removing files
+- `paperplane.fill` - Send button in chat interface
+- `pencil` - Edit icon for transaction editing
 
 ## Unified Component Architecture
 
@@ -168,8 +168,8 @@ struct TransactionsView: View {
                     Spacer()
                     
                     Button(action: { showingFilePicker = true }) {
-                        Image("add")
-                            .renderingMode(.template)
+                        Image(systemName: "plus.circle.fill")
+                            .font(.system(size: 24))
                             .foregroundColor(.veraLightGreen)
                     }
                 }
@@ -207,8 +207,8 @@ struct UploadsSection: View {
                         .font(.custom("Inter-Light", size: 12))
                     
                     Button(action: { /* Delete */ }) {
-                        Image("delete")
-                            .renderingMode(.template)
+                        Image(systemName: "trash")
+                            .font(.system(size: 14))
                             .foregroundColor(.red.opacity(0.6))
                     }
                 }
@@ -298,8 +298,8 @@ struct TransactionRow: View {
             
             // Edit button
             Button(action: onEdit) {
-                Image("pen")
-                    .renderingMode(.template)
+                Image(systemName: "pencil")
+                    .font(.system(size: 14))
                     .foregroundColor(.veraDarkGreen.opacity(0.5))
                     .frame(width: 20, height: 20)
             }
@@ -625,9 +625,10 @@ struct BudgetChatView: View {
                     .cornerRadius(20)
                 
                 Button(action: sendMessage) {
-                    Image("send")
-                        .renderingMode(.template)
+                    Image(systemName: "paperplane.fill")
+                        .font(.system(size: 16))
                         .foregroundColor(.veraWhite)
+                        .rotationEffect(.degrees(45))
                         .padding(12)
                         .background(Color.veraLightGreen)
                         .clipShape(Circle())
@@ -755,13 +756,7 @@ Vera/
 │   └── DataManager.swift
 └── Assets.xcassets/
     └── Icons/
-        ├── transaction.svg
-        ├── insights.svg
-        ├── budget.svg
-        ├── add.svg
-        ├── delete.svg
-        ├── send.svg
-        └── pen.svg
+        └── README.md (Note: Using SF Symbols, no custom icons needed)
 ```
 
 ## Development Priority
