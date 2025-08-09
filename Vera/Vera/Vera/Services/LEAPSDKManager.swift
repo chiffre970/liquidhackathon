@@ -1,5 +1,5 @@
 import Foundation
-import Leap
+import LeapSDK
 
 @available(iOS 15.0, *)
 class LEAPSDKManager {
@@ -25,8 +25,8 @@ class LEAPSDKManager {
         }
     }
     
-    private var modelRunner: ModelRunner?
-    private var conversation: Conversation?
+    private var modelRunner: LeapSDK.ModelRunner?
+    private var conversation: LeapSDK.Conversation?
     private let modelQueue = DispatchQueue(label: "com.vera.leap.model", qos: .userInitiated)
     private var currentModelSize: ModelSize?
     
@@ -59,10 +59,10 @@ class LEAPSDKManager {
         
         // Load the model using LeapSDK (following the quick start guide pattern)
         do {
-            modelRunner = try await Leap.load(url: modelURL)
+            modelRunner = try await LeapSDK.Leap.load(url: modelURL)
             
             // Create a conversation instance for managing chat interactions
-            conversation = Conversation(modelRunner: modelRunner!, history: [])
+            conversation = LeapSDK.Conversation(modelRunner: modelRunner!, history: [])
             currentModelSize = modelSize
             
             print("Successfully loaded \(modelSize.displayName)")
@@ -77,10 +77,10 @@ class LEAPSDKManager {
         }
         
         // Create fresh conversation for single-turn generation
-        let conversation = Conversation(modelRunner: modelRunner, history: [])
+        let conversation = LeapSDK.Conversation(modelRunner: modelRunner, history: [])
         
         // Create a user message
-        let userMessage = ChatMessage(role: .user, content: [.text(prompt)])
+        let userMessage = LeapSDK.ChatMessage(role: .user, content: [.text(prompt)])
         
         var generatedText = ""
         
@@ -131,8 +131,8 @@ class LEAPSDKManager {
                 }
                 
                 // Create fresh conversation for streaming
-                let conversation = Conversation(modelRunner: modelRunner, history: [])
-                let userMessage = ChatMessage(role: .user, content: [.text(prompt)])
+                let conversation = LeapSDK.Conversation(modelRunner: modelRunner, history: [])
+                let userMessage = LeapSDK.ChatMessage(role: .user, content: [.text(prompt)])
                 var totalGenerated = 0
                 
                 let stream = conversation.generateResponse(message: userMessage)
@@ -173,16 +173,16 @@ class LEAPSDKManager {
     }
     
     // For chat conversations with history
-    func generateWithHistory(prompt: String, history: [ChatMessage], maxTokens: Int = 512) async throws -> String {
+    func generateWithHistory(prompt: String, history: [LeapSDK.ChatMessage], maxTokens: Int = 512) async throws -> String {
         guard let modelRunner = modelRunner else {
             throw LEAPError.modelNotInitialized
         }
         
         // Create conversation with history
-        let conversation = Conversation(modelRunner: modelRunner, history: history)
+        let conversation = LeapSDK.Conversation(modelRunner: modelRunner, history: history)
         
         // Create a user message
-        let userMessage = ChatMessage(role: .user, content: [.text(prompt)])
+        let userMessage = LeapSDK.ChatMessage(role: .user, content: [.text(prompt)])
         
         var generatedText = ""
         
@@ -212,7 +212,7 @@ class LEAPSDKManager {
     func resetConversation() {
         // Reset conversation history while keeping the model loaded
         if let modelRunner = modelRunner {
-            conversation = Conversation(modelRunner: modelRunner, history: [])
+            conversation = LeapSDK.Conversation(modelRunner: modelRunner, history: [])
         }
     }
     

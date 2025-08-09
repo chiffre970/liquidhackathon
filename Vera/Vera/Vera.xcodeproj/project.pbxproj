@@ -6,6 +6,11 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		8CE8DBBC2E46E681006A9CB2 /* LeapSDK in Frameworks */ = {isa = PBXBuildFile; productRef = 8CE8DBBB2E46E681006A9CB2 /* LeapSDK */; };
+		8CE8DBBE2E46E681006A9CB2 /* LeapSDKConstrainedGeneration in Frameworks */ = {isa = PBXBuildFile; productRef = 8CE8DBBD2E46E681006A9CB2 /* LeapSDKConstrainedGeneration */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXContainerItemProxy section */
 		8CE8DB2A2E457611006A9CB2 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -52,6 +57,8 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				8CE8DBBE2E46E681006A9CB2 /* LeapSDKConstrainedGeneration in Frameworks */,
+				8CE8DBBC2E46E681006A9CB2 /* LeapSDK in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -112,6 +119,8 @@
 			);
 			name = Vera;
 			packageProductDependencies = (
+				8CE8DBBB2E46E681006A9CB2 /* LeapSDK */,
+				8CE8DBBD2E46E681006A9CB2 /* LeapSDKConstrainedGeneration */,
 			);
 			productName = Vera;
 			productReference = 8CE8DB172E457610006A9CB2 /* Vera.app */;
@@ -196,7 +205,7 @@
 			mainGroup = 8CE8DB0E2E457610006A9CB2;
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
-				8CE8DBA92E46C367006A9CB2 /* XCRemoteSwiftPackageReference "leap-ios" */,
+				8CE8DBBA2E46E681006A9CB2 /* XCRemoteSwiftPackageReference "leap-ios" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 8CE8DB182E457610006A9CB2 /* Products */;
@@ -563,15 +572,28 @@
 /* End XCConfigurationList section */
 
 /* Begin XCRemoteSwiftPackageReference section */
-		8CE8DBA92E46C367006A9CB2 /* XCRemoteSwiftPackageReference "leap-ios" */ = {
+		8CE8DBBA2E46E681006A9CB2 /* XCRemoteSwiftPackageReference "leap-ios" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/Liquid4All/leap-ios.git";
 			requirement = {
-				branch = main;
-				kind = branch;
+				kind = upToNextMajorVersion;
+				minimumVersion = "0.3.0-2";
 			};
 		};
 /* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		8CE8DBBB2E46E681006A9CB2 /* LeapSDK */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 8CE8DBBA2E46E681006A9CB2 /* XCRemoteSwiftPackageReference "leap-ios" */;
+			productName = LeapSDK;
+		};
+		8CE8DBBD2E46E681006A9CB2 /* LeapSDKConstrainedGeneration */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 8CE8DBBA2E46E681006A9CB2 /* XCRemoteSwiftPackageReference "leap-ios" */;
+			productName = LeapSDKConstrainedGeneration;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 8CE8DB0F2E457610006A9CB2 /* Project object */;
 }
