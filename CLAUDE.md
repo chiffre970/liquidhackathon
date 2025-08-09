@@ -5,6 +5,24 @@ This file provides important context for Claude Code when working on the Vera ap
 ## Project Overview
 Building Vera - a privacy-first iOS personal finance assistant for the Liquid AI Hackathon using LFM2 model for local transaction analysis.
 
+## Recent Development (2025-08-09)
+
+### Build Error Fixes Completed
+Successfully resolved all compilation errors:
+
+1. **CSVProcessor.swift** - Fixed Transaction initializer parameter order mismatch
+2. **LEAPSDKManager.swift** - Added proper error handling:
+   - Wrapped `for await` loops in do-try-catch blocks
+   - Fixed String range operations (using `.range(of:)` instead of `.firstIndex(of:)`)
+3. **PerformanceMonitor.swift** - Added UIKit import for UIApplication
+4. **CacheManager.swift** - Fixed generic type conflicts:
+   - Created `DiskCacheEntry` struct for proper Codable serialization
+   - Added UIKit import
+5. **BudgetChatView.swift** - Fixed Int to Double conversion for percentage field
+6. **Transaction.swift** - Added Equatable conformance for SwiftUI onChange compatibility
+
+The project now builds successfully with `xcodebuild -project Vera.xcodeproj -scheme Vera -sdk iphoneos`.
+
 ## Key Development Commands
 - **Build**: `xcodebuild -project Vera.xcodeproj -scheme Vera -sdk iphoneos`
 - **Test**: `xcodebuild test -project Vera.xcodeproj -scheme Vera -destination 'platform=iOS Simulator,name=iPhone 15'`
