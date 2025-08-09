@@ -214,7 +214,7 @@ struct BudgetChatView: View {
             Budget.CategoryAllocation(
                 name: cat["name"] as? String ?? "Unknown",
                 amount: cat["amount"] as? Double ?? 0,
-                percentage: cat["percentage"] as? Int ?? 0
+                percentage: Double(cat["percentage"] as? Int ?? 0)
             )
         }
         

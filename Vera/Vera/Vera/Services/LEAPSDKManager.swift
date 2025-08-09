@@ -87,15 +87,16 @@ class LEAPSDKManager {
         // Generate response with streaming
         let stream = conversation.generateResponse(message: userMessage)
         
-        for await response in stream {
-            switch response {
-            case .chunk(let text):
-                generatedText += text
-                
-                // Check for early stopping conditions
-                if generatedText.count >= maxTokens {
-                    break
-                }
+        do {
+            for try await response in stream {
+                switch response {
+                case .chunk(let text):
+                    generatedText += text
+                    
+                    // Check for early stopping conditions
+                    if generatedText.count >= maxTokens {
+                        break
+                    }
                 
                 // Check for stop sequences
                 if generatedText.contains("\n\n") || generatedText.contains("END") {
@@ -111,10 +112,13 @@ class LEAPSDKManager {
                 continue
             }
         }
+        } catch {
+            print("Error generating response: \(error)")
+        }
         
         // Clean up the response
-        if let stopIndex = generatedText.firstIndex(of: "\n\n") {
-            generatedText = String(generatedText[..<stopIndex])
+        if let stopIndex = generatedText.range(of: "\n\n") {
+            generatedText = String(generatedText[..<stopIndex.lowerBound])
         } else if let endIndex = generatedText.range(of: "END") {
             generatedText = String(generatedText[..<endIndex.lowerBound])
         }
@@ -138,7 +142,7 @@ class LEAPSDKManager {
                 let stream = conversation.generateResponse(message: userMessage)
                 
                 do {
-                    for await response in stream {
+                    for try await response in stream {
                         switch response {
                         case .chunk(let text):
                             continuation.yield(text)
@@ -189,14 +193,15 @@ class LEAPSDKManager {
         // Generate response with streaming
         let stream = conversation.generateResponse(message: userMessage)
         
-        for await response in stream {
-            switch response {
-            case .chunk(let text):
-                generatedText += text
-                
-                if generatedText.count >= maxTokens {
-                    break
-                }
+        do {
+            for try await response in stream {
+                switch response {
+                case .chunk(let text):
+                    generatedText += text
+                    
+                    if generatedText.count >= maxTokens {
+                        break
+                    }
                 
             case .complete(_, _):
                 break
@@ -204,6 +209,9 @@ class LEAPSDKManager {
             default:
                 continue
             }
+        }
+        } catch {
+            print("Error generating constrained response: \(error)")
         }
         
         return generatedText.trimmingCharacters(in: .whitespacesAndNewlines)

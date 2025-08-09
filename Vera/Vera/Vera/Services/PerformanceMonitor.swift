@@ -1,4 +1,5 @@
 import Foundation
+import UIKit
 
 class PerformanceMonitor {
     static let shared = PerformanceMonitor()

@@ -178,12 +178,11 @@ class CSVProcessor: ObservableObject {
             let date = dateFormatter.date(from: dateString) ?? Date()
             
             return Transaction(
-                id: UUID(),
                 date: date,
-                description: dict["description"] as? String ?? "",
                 amount: amount,
-                category: dict["category"] as? String,
-                counterparty: dict["counterparty"] as? String
+                description: dict["description"] as? String ?? "",
+                counterparty: dict["counterparty"] as? String,
+                category: dict["category"] as? String
             )
         }
     }

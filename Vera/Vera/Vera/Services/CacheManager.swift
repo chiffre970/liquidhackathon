@@ -1,4 +1,5 @@
 import Foundation
+import UIKit
 
 class CacheManager {
     static let shared = CacheManager()
@@ -51,6 +52,12 @@ class CacheManager {
         var size: Int {
             return data.count
         }
+    }
+    
+    // Codable wrapper for disk storage
+    private struct DiskCacheEntry: Codable {
+        let data: Data
+        let expirationDate: Date
     }
     
     // MARK: - Public Interface
@@ -168,10 +175,8 @@ class CacheManager {
         
         do {
             let encoder = PropertyListEncoder()
-            let encoded = try encoder.encode([
-                "data": entry.data,
-                "expiration": entry.expirationDate
-            ])
+            let diskEntry = DiskCacheEntry(data: entry.data, expirationDate: entry.expirationDate)
+            let encoded = try encoder.encode(diskEntry)
             try encoded.write(to: fileURL)
         } catch {
             logger.error("Failed to save cache to disk: \(error)")
@@ -188,16 +193,10 @@ class CacheManager {
         
         do {
             let decoder = PropertyListDecoder()
-            if let decoded = try? decoder.decode([String: Data].self, from: data),
-               let entryData = decoded["data"],
-               let expirationData = decoded["expiration"] {
-                
-                // Decode expiration date
-                let expiration = try decoder.decode(Date.self, from: expirationData)
-                let cacheKey = key ?? url.lastPathComponent
-                
-                return CacheEntry(data: entryData, expirationDate: expiration, key: cacheKey)
-            }
+            let diskEntry = try decoder.decode(DiskCacheEntry.self, from: data)
+            let cacheKey = key ?? url.lastPathComponent
+            
+            return CacheEntry(data: diskEntry.data, expirationDate: diskEntry.expirationDate, key: cacheKey)
         } catch {
             logger.error("Failed to load cache from disk: \(error)")
         }
