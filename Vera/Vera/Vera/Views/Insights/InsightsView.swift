@@ -76,8 +76,17 @@ struct InsightsView: View {
         
         Task {
             do {
-                // Get transactions for the selected month
+                // First, process all CSV files (parse, categorize, deduplicate, save)
+                print("🔄 Starting full analysis pipeline...")
+                let processedTransactions = try await csvProcessor.processAllFiles()
+                print("✅ Processed \(processedTransactions.count) transactions")
+                
+                // Initialize LFM2 if needed
+                await lfm2Manager.initialize()
+                
+                // Get transactions for the selected month from the newly processed data
                 let transactions = dataManager.fetchTransactions(for: selectedMonth)
+                print("📊 Analyzing \(transactions.count) transactions for selected month")
                 
                 // Use LFM2Manager to analyze spending with real AI
                 let cashFlowData = try await lfm2Manager.analyzeSpending(transactions)

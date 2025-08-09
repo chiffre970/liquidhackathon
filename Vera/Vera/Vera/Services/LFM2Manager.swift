@@ -18,6 +18,13 @@ class LFM2Manager: ObservableObject {
         logger.info("LFM2Manager initialized")
     }
     
+    func initialize() async {
+        // Initialize the LFM2 service and LEAP SDK
+        logger.info("Initializing LFM2 service...")
+        await lfm2Service.initialize()
+        logger.success("LFM2 service initialized")
+    }
+    
     struct ProcessedTransaction {
         let text: String
         let category: String

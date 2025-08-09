@@ -24,25 +24,29 @@ class PromptManager {
     
     private func preloadPrompts() {
         for promptType in PromptType.allCases {
-            guard let prompt = loadPromptFromFile(promptType.fileName) else {
-                fatalError("Required prompt file missing: \(promptType.fileName)")
+            if let prompt = loadPromptFromFile(promptType.fileName) {
+                prompts[promptType.rawValue] = prompt
+            } else {
+                print("Warning: Using default prompt for \(promptType.rawValue)")
+                prompts[promptType.rawValue] = getDefaultPrompt(for: promptType)
             }
-            prompts[promptType.rawValue] = prompt
         }
     }
     
     private func loadPromptFromFile(_ fileName: String) -> String? {
-        guard let url = Bundle.main.url(forResource: fileName, withExtension: nil, subdirectory: "Prompts") else {
-            print("Warning: Could not find prompt file: \(fileName)")
-            return nil
+        // Try with subdirectory first
+        if let url = Bundle.main.url(forResource: fileName, withExtension: nil, subdirectory: "Prompts") {
+            return try? String(contentsOf: url, encoding: .utf8)
         }
         
-        do {
-            return try String(contentsOf: url, encoding: .utf8)
-        } catch {
-            print("Error loading prompt file \(fileName): \(error)")
-            return nil
+        // Try without subdirectory (files might be in root)
+        let fileNameWithoutExtension = fileName.replacingOccurrences(of: ".prompt", with: "")
+        if let url = Bundle.main.url(forResource: fileNameWithoutExtension, withExtension: "prompt") {
+            return try? String(contentsOf: url, encoding: .utf8)
         }
+        
+        print("Warning: Could not find prompt file: \(fileName)")
+        return nil
     }
     
     func loadPrompt(_ type: PromptType) -> String {
@@ -78,6 +82,23 @@ class PromptManager {
     func fillTemplate(type: PromptType, variables: [String: Any]) -> String {
         let prompt = loadPrompt(type)
         return fillTemplate(prompt, variables: variables)
+    }
+    
+    private func getDefaultPrompt(for type: PromptType) -> String {
+        switch type {
+        case .transactionParser:
+            return "Parse the following transaction: {{transaction_text}}"
+        case .categoryClassifier:
+            return "Classify this transaction into a category: {{description}}"
+        case .insightsAnalyzer:
+            return "Analyze these transactions and provide insights: {{transactions_json}}"
+        case .budgetNegotiator:
+            return "Help create a budget based on: {{spending_json}}"
+        case .budgetInsights:
+            return "Provide budget insights for: {{budget_data}}"
+        case .transactionDeduplicator:
+            return "Find duplicate transactions in: {{transactions}}"
+        }
     }
     
     

@@ -1,5 +1,9 @@
 import Foundation
 import LeapSDK
+// Import the backend if available
+#if canImport(LeapSDKBackends)
+import LeapSDKBackends
+#endif
 
 @available(iOS 15.0, *)
 class LEAPSDKManager {
@@ -33,9 +37,30 @@ class LEAPSDKManager {
         }
         
         print("Loading model: \(modelDisplayName) from \(modelURL.lastPathComponent)")
+        print("Model URL path: \(modelURL.path)")
+        
+        // Verify the bundle exists and is accessible
+        let fileManager = FileManager.default
+        if fileManager.fileExists(atPath: modelURL.path) {
+            print("✅ Model bundle file exists")
+            
+            // Check if it's a directory (proper bundle) or a file
+            var isDirectory: ObjCBool = false
+            fileManager.fileExists(atPath: modelURL.path, isDirectory: &isDirectory)
+            print("Is directory: \(isDirectory.boolValue)")
+            
+            // Get file size
+            if let attributes = try? fileManager.attributesOfItem(atPath: modelURL.path),
+               let fileSize = attributes[.size] as? Int64 {
+                print("Model size: \(fileSize / 1024 / 1024) MB")
+            }
+        } else {
+            print("❌ Model bundle file does NOT exist at path")
+        }
         
         // Load the model using LeapSDK
         do {
+            print("Attempting to load model with LeapSDK...")
             modelRunner = try await LeapSDK.Leap.load(url: modelURL)
             
             // Create a conversation instance for managing chat interactions

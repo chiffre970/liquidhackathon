@@ -41,15 +41,10 @@ class LFM2Service {
     
     // Check if model is loaded
     func isModelLoaded() -> Bool {
-        return leapSDK.getCurrentModelSize() != nil
+        return leapSDK.isModelReady()
     }
     
-    // Switch to a different model
-    func switchModel(to modelSize: LEAPSDKManager.ModelSize) async throws {
-        logger.info("Switching to model: \(modelSize.displayName)")
-        try await leapSDK.switchModel(to: modelSize)
-        logger.success("Switched to model: \(modelSize.displayName)")
-    }
+    // Model switching is no longer supported - using only 350M model
     
     // MARK: - Core Inference
     
