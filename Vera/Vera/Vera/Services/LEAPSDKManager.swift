@@ -3,71 +3,48 @@ import LeapSDK
 
 @available(iOS 15.0, *)
 class LEAPSDKManager {
-    // Model size enum for easy selection
-    enum ModelSize: String, CaseIterable {
-        case small = "350M"
-        case medium = "700M"
-        case large = "1.2B"
-        
-        var fileName: String {
-            switch self {
-            case .small:
-                return "LFM2-350M-8da4w_output_8da8w-seq_4096"
-            case .medium:
-                return "LFM2-700M-8da4w_output_8da8w-seq_4096"
-            case .large:
-                return "LFM2-1.2B-8da4w_output_8da8w-seq_4096"
-            }
-        }
-        
-        var displayName: String {
-            return "LFM2-\(self.rawValue)"
-        }
-    }
+    // Using only the 350M model for mobile efficiency
+    private let modelFileName = "LFM2-350M-8da4w_output_8da8w-seq_4096"
+    private let modelDisplayName = "LFM2-350M"
     
     private var modelRunner: LeapSDK.ModelRunner?
     private var conversation: LeapSDK.Conversation?
     private let modelQueue = DispatchQueue(label: "com.vera.leap.model", qos: .userInitiated)
-    private var currentModelSize: ModelSize?
+    private var isModelLoaded = false
     
     static let shared = LEAPSDKManager()
     
     private init() {}
     
-    // Initialize with specific model size
-    func initialize(modelSize: ModelSize = .small) async throws {
-        // Check if we're already using this model
-        if currentModelSize == modelSize, modelRunner != nil {
-            print("Model \(modelSize.displayName) already loaded")
+    // Initialize the 350M model
+    func initialize() async throws {
+        // Check if model is already loaded
+        if isModelLoaded, modelRunner != nil {
+            print("Model \(modelDisplayName) already loaded")
             return
-        }
-        
-        // Unload previous model if any
-        if modelRunner != nil {
-            unload()
         }
         
         // Look for the model bundle in the app
         guard let modelURL = Bundle.main.url(
-            forResource: modelSize.fileName,
+            forResource: modelFileName,
             withExtension: "bundle"
         ) else {
-            throw LEAPError.modelNotFound("Model file '\(modelSize.fileName).bundle' not found in app bundle")
+            throw LEAPError.modelNotFound("Model file '\(modelFileName).bundle' not found in app bundle")
         }
         
-        print("Loading model: \(modelSize.displayName) from \(modelURL.lastPathComponent)")
+        print("Loading model: \(modelDisplayName) from \(modelURL.lastPathComponent)")
         
-        // Load the model using LeapSDK (following the quick start guide pattern)
+        // Load the model using LeapSDK
         do {
             modelRunner = try await LeapSDK.Leap.load(url: modelURL)
             
             // Create a conversation instance for managing chat interactions
             conversation = LeapSDK.Conversation(modelRunner: modelRunner!, history: [])
-            currentModelSize = modelSize
+            isModelLoaded = true
             
-            print("Successfully loaded \(modelSize.displayName)")
+            print("Successfully loaded \(modelDisplayName)")
         } catch {
-            throw LEAPError.modelLoadFailed("Failed to load \(modelSize.displayName): \(error.localizedDescription)")
+            throw LEAPError.modelLoadFailed("Failed to load \(modelDisplayName): \(error.localizedDescription)")
         }
     }
     
@@ -227,20 +204,12 @@ class LEAPSDKManager {
     func unload() {
         modelRunner = nil
         conversation = nil
-        currentModelSize = nil
+        isModelLoaded = false
     }
     
-    // Get current model size
-    func getCurrentModelSize() -> ModelSize? {
-        return currentModelSize
-    }
-    
-    // Switch to a different model
-    func switchModel(to modelSize: ModelSize) async throws {
-        await MainActor.run {
-            print("Switching from \(currentModelSize?.displayName ?? "none") to \(modelSize.displayName)")
-        }
-        try await initialize(modelSize: modelSize)
+    // Check if model is loaded
+    func isModelReady() -> Bool {
+        return isModelLoaded && modelRunner != nil
     }
 }
 

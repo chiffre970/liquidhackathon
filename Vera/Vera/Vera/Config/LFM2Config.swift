@@ -2,8 +2,7 @@ import Foundation
 
 struct LFM2Config {
     // Model Configuration
-    static let defaultModelSize: LEAPSDKManager.ModelSize = .small  // Default to 350M for faster performance
-    static let modelName = "lfm2"
+    static let modelName = "lfm2-350M"  // Using only 350M model for mobile efficiency
     static let maxTokens = 512
     static let temperature = 0.6  // Lower for more consistent output
     static let topP = 0.85

@@ -20,19 +20,18 @@ class LFM2Service {
     }
     
     // Public method to initialize the model when ready
-    func initialize(modelSize: LEAPSDKManager.ModelSize? = nil) async {
-        let size = modelSize ?? LFM2Config.defaultModelSize
-        await initializeModel(modelSize: size)
+    func initialize() async {
+        await initializeModel()
     }
     
-    private func initializeModel(modelSize: LEAPSDKManager.ModelSize) async {
-        logger.info("Initializing LFM2 model: \(modelSize.displayName)")
+    private func initializeModel() async {
+        logger.info("Initializing LFM2-350M model")
         let startTime = logger.startTimer("Model Initialization")
         
         do {
-            try await leapSDK.initialize(modelSize: modelSize)
+            try await leapSDK.initialize()
             logger.endTimer("Model Initialization", start: startTime)
-            logger.success("LFM2 model \(modelSize.displayName) initialized successfully")
+            logger.success("LFM2-350M model initialized successfully")
         } catch {
             logger.error("Failed to initialize LFM2 model: \(error)")
             // Don't fatal error - allow app to handle the error
