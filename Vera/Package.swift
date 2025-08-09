@@ -18,7 +18,8 @@ let package = Package(
         .target(
             name: "PFMApp",
             dependencies: [
-                .product(name: "LeapSDK", package: "leap-ios")
+                .product(name: "LeapSDK", package: "leap-ios"),
+                .product(name: "LeapSDKTypes", package: "leap-ios")
             ]),
         .testTarget(
             name: "PFMAppTests",

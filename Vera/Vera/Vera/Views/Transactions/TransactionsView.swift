@@ -2,6 +2,7 @@ import SwiftUI
 
 struct TransactionsView: View {
     @EnvironmentObject var csvProcessor: CSVProcessor
+    @StateObject private var dataManager = DataManager.shared
     @State private var showingFilePicker = false
     @State private var transactions: [Transaction] = []
     @State private var isLoading = false
@@ -23,6 +24,26 @@ struct TransactionsView: View {
                     }
                 }
                 
+                // Show processing status if active
+                if csvProcessor.isProcessing {
+                    VCard {
+                        VStack(spacing: 12) {
+                            Text(csvProcessor.processingStep.description)
+                                .font(.veraBody())
+                                .foregroundColor(.black)
+                            
+                            ProgressView(value: csvProcessor.processingProgress)
+                                .progressViewStyle(LinearProgressViewStyle(tint: .veraLightGreen))
+                            
+                            if !csvProcessor.processingMessage.isEmpty {
+                                Text(csvProcessor.processingMessage)
+                                    .font(.veraCaption())
+                                    .foregroundColor(.black.opacity(0.6))
+                            }
+                        }
+                    }
+                }
+                
                 UploadsSection()
                     .environmentObject(csvProcessor)
                 
@@ -34,16 +55,22 @@ struct TransactionsView: View {
         .sheet(isPresented: $showingFilePicker) {
             DocumentPicker { url in
                 csvProcessor.importCSV(from: url)
-                loadTransactions()
             }
         }
         .onAppear {
             loadTransactions()
         }
+        .onChange(of: csvProcessor.parsedTransactions) { _, _ in
+            loadTransactions()
+        }
+        .onChange(of: dataManager.transactions) { _, _ in
+            loadTransactions()
+        }
     }
     
     private func loadTransactions() {
-        transactions = csvProcessor.parsedTransactions
+        // Load transactions from DataManager (includes all saved transactions)
+        transactions = dataManager.transactions.sorted { $0.date > $1.date }
     }
 }
 

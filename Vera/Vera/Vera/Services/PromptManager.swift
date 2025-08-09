@@ -15,6 +15,7 @@ class PromptManager {
         case insightsAnalyzer = "InsightsAnalyzer"
         case budgetNegotiator = "BudgetNegotiator"
         case budgetInsights = "BudgetInsights"
+        case transactionDeduplicator = "TransactionDeduplicator"
         
         var fileName: String {
             return "\(rawValue).prompt"

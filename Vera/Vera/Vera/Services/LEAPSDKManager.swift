@@ -1,41 +1,83 @@
 import Foundation
-import LeapSDK
+import Leap
 
 @available(iOS 15.0, *)
 class LEAPSDKManager {
+    // Model size enum for easy selection
+    enum ModelSize: String, CaseIterable {
+        case small = "350M"
+        case medium = "700M"
+        case large = "1.2B"
+        
+        var fileName: String {
+            switch self {
+            case .small:
+                return "LFM2-350M-8da4w_output_8da8w-seq_4096"
+            case .medium:
+                return "LFM2-700M-8da4w_output_8da8w-seq_4096"
+            case .large:
+                return "LFM2-1.2B-8da4w_output_8da8w-seq_4096"
+            }
+        }
+        
+        var displayName: String {
+            return "LFM2-\(self.rawValue)"
+        }
+    }
+    
     private var modelRunner: ModelRunner?
     private var conversation: Conversation?
     private let modelQueue = DispatchQueue(label: "com.vera.leap.model", qos: .userInitiated)
+    private var currentModelSize: ModelSize?
     
     static let shared = LEAPSDKManager()
     
     private init() {}
     
-    func initialize() async throws {
-        // Look for the model bundle in the app
-        guard let modelURL = Bundle.main.url(forResource: "lfm2-700m", withExtension: "bundle") else {
-            // Try alternate extensions
-            if let onnxURL = Bundle.main.url(forResource: "lfm2-700m", withExtension: "onnx") {
-                throw LEAPError.modelNotFound("Found .onnx file but LeapSDK requires .bundle format. Please convert the model.")
-            }
-            throw LEAPError.modelNotFound("Model file 'lfm2-700m.bundle' not found in app bundle")
+    // Initialize with specific model size
+    func initialize(modelSize: ModelSize = .small) async throws {
+        // Check if we're already using this model
+        if currentModelSize == modelSize, modelRunner != nil {
+            print("Model \(modelSize.displayName) already loaded")
+            return
         }
         
-        // Load the model using LeapSDK
+        // Unload previous model if any
+        if modelRunner != nil {
+            unload()
+        }
+        
+        // Look for the model bundle in the app
+        guard let modelURL = Bundle.main.url(
+            forResource: modelSize.fileName,
+            withExtension: "bundle"
+        ) else {
+            throw LEAPError.modelNotFound("Model file '\(modelSize.fileName).bundle' not found in app bundle")
+        }
+        
+        print("Loading model: \(modelSize.displayName) from \(modelURL.lastPathComponent)")
+        
+        // Load the model using LeapSDK (following the quick start guide pattern)
         do {
             modelRunner = try await Leap.load(url: modelURL)
             
             // Create a conversation instance for managing chat interactions
             conversation = Conversation(modelRunner: modelRunner!, history: [])
+            currentModelSize = modelSize
+            
+            print("Successfully loaded \(modelSize.displayName)")
         } catch {
-            throw LEAPError.modelLoadFailed("Failed to load model: \(error.localizedDescription)")
+            throw LEAPError.modelLoadFailed("Failed to load \(modelSize.displayName): \(error.localizedDescription)")
         }
     }
     
     func generate(prompt: String, maxTokens: Int = 512) async throws -> String {
-        guard let conversation = conversation else {
+        guard let modelRunner = modelRunner else {
             throw LEAPError.modelNotInitialized
         }
+        
+        // Create fresh conversation for single-turn generation
+        let conversation = Conversation(modelRunner: modelRunner, history: [])
         
         // Create a user message
         let userMessage = ChatMessage(role: .user, content: [.text(prompt)])
@@ -43,7 +85,9 @@ class LEAPSDKManager {
         var generatedText = ""
         
         // Generate response with streaming
-        for await response in conversation.generateResponse(message: userMessage) {
+        let stream = conversation.generateResponse(message: userMessage)
+        
+        for await response in stream {
             switch response {
             case .chunk(let text):
                 generatedText += text
@@ -58,13 +102,13 @@ class LEAPSDKManager {
                     break
                 }
                 
-            case .reasoningChunk(_):
-                // We don't need reasoning chunks for basic generation
-                continue
-                
             case .complete(_, _):
                 // Generation complete
                 break
+                
+            default:
+                // Handle any other cases
+                continue
             }
         }
         
@@ -81,16 +125,20 @@ class LEAPSDKManager {
     func generateStream(prompt: String, maxTokens: Int = 512) -> AsyncThrowingStream<String, Error> {
         AsyncThrowingStream { continuation in
             Task {
-                guard let conversation = conversation else {
+                guard let modelRunner = modelRunner else {
                     continuation.finish(throwing: LEAPError.modelNotInitialized)
                     return
                 }
                 
+                // Create fresh conversation for streaming
+                let conversation = Conversation(modelRunner: modelRunner, history: [])
                 let userMessage = ChatMessage(role: .user, content: [.text(prompt)])
                 var totalGenerated = 0
                 
+                let stream = conversation.generateResponse(message: userMessage)
+                
                 do {
-                    for await response in conversation.generateResponse(message: userMessage) {
+                    for await response in stream {
                         switch response {
                         case .chunk(let text):
                             continuation.yield(text)
@@ -108,13 +156,13 @@ class LEAPSDKManager {
                                 return
                             }
                             
-                        case .reasoningChunk(_):
-                            // Skip reasoning chunks
-                            continue
-                            
                         case .complete(_, _):
                             continuation.finish()
                             return
+                            
+                        default:
+                            // Handle any other cases
+                            continue
                         }
                     }
                 } catch {
@@ -122,6 +170,43 @@ class LEAPSDKManager {
                 }
             }
         }
+    }
+    
+    // For chat conversations with history
+    func generateWithHistory(prompt: String, history: [ChatMessage], maxTokens: Int = 512) async throws -> String {
+        guard let modelRunner = modelRunner else {
+            throw LEAPError.modelNotInitialized
+        }
+        
+        // Create conversation with history
+        let conversation = Conversation(modelRunner: modelRunner, history: history)
+        
+        // Create a user message
+        let userMessage = ChatMessage(role: .user, content: [.text(prompt)])
+        
+        var generatedText = ""
+        
+        // Generate response with streaming
+        let stream = conversation.generateResponse(message: userMessage)
+        
+        for await response in stream {
+            switch response {
+            case .chunk(let text):
+                generatedText += text
+                
+                if generatedText.count >= maxTokens {
+                    break
+                }
+                
+            case .complete(_, _):
+                break
+                
+            default:
+                continue
+            }
+        }
+        
+        return generatedText.trimmingCharacters(in: .whitespacesAndNewlines)
     }
     
     func resetConversation() {
@@ -134,6 +219,20 @@ class LEAPSDKManager {
     func unload() {
         modelRunner = nil
         conversation = nil
+        currentModelSize = nil
+    }
+    
+    // Get current model size
+    func getCurrentModelSize() -> ModelSize? {
+        return currentModelSize
+    }
+    
+    // Switch to a different model
+    func switchModel(to modelSize: ModelSize) async throws {
+        await MainActor.run {
+            print("Switching from \(currentModelSize?.displayName ?? "none") to \(modelSize.displayName)")
+        }
+        try await initialize(modelSize: modelSize)
     }
 }
 

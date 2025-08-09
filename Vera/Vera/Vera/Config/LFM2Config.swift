@@ -2,8 +2,8 @@ import Foundation
 
 struct LFM2Config {
     // Model Configuration
-    static let modelName = "lfm2-700m"
-    static let modelPath = Bundle.main.path(forResource: "lfm2-700m", ofType: "onnx")
+    static let defaultModelSize: LEAPSDKManager.ModelSize = .small  // Default to 350M for faster performance
+    static let modelName = "lfm2"
     static let maxTokens = 512
     static let temperature = 0.6  // Lower for more consistent output
     static let topP = 0.85

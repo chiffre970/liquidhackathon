@@ -63,6 +63,37 @@ class DataManager: ObservableObject {
         }
     }
     
+    func saveTransactions(_ newTransactions: [Transaction]) async throws {
+        await MainActor.run {
+            isLoading = true
+        }
+        
+        // Check for duplicates before adding
+        for transaction in newTransactions {
+            // Check if transaction already exists based on date, amount, and description
+            let isDuplicate = transactions.contains { existing in
+                existing.date == transaction.date &&
+                existing.amount == transaction.amount &&
+                existing.description == transaction.description
+            }
+            
+            if !isDuplicate {
+                transactions.append(transaction)
+            }
+        }
+        
+        await MainActor.run {
+            // Sort transactions by date
+            transactions.sort { $0.date > $1.date }
+            saveToUserDefaults()
+            isLoading = false
+        }
+    }
+    
+    func fetchTransactions(for month: Date) -> [Transaction] {
+        return getTransactions(for: month)
+    }
+    
     func saveBudget(_ budget: Budget) {
         budgets.append(budget)
         saveBudgetsToUserDefaults()

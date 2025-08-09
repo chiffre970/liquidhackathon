@@ -116,27 +116,125 @@ struct BudgetChatView: View {
     
     
     private func createBudget() {
-        let budget = Budget(
+        isProcessing = true
+        errorMessage = nil
+        
+        Task {
+            do {
+                // Create a summary prompt for budget generation
+                let chatSummary = messages.map { msg in
+                    "\(msg.isUser ? "User" : "Assistant"): \(msg.content)"
+                }.joined(separator: "\n")
+                
+                // Get current spending data from DataManager
+                let currentMonth = Date()
+                let transactions = DataManager.shared.fetchTransactions(for: currentMonth)
+                
+                // Calculate spending by category
+                var categorySpending: [String: Double] = [:]
+                for transaction in transactions where transaction.amount < 0 {
+                    let category = transaction.category ?? "Other"
+                    categorySpending[category, default: 0] += abs(transaction.amount)
+                }
+                
+                // Use LFM2 to generate a budget based on the chat context
+                let budgetPrompt = """
+                Based on the following budget negotiation chat and current spending patterns, generate a monthly budget.
+                
+                Chat History:
+                \(chatSummary)
+                
+                Current Monthly Spending:
+                \(categorySpending.map { "\($0.key): $\(String(format: "%.2f", $0.value))" }.joined(separator: "\n"))
+                
+                Generate a JSON budget with:
+                - monthlyTarget: total monthly budget amount
+                - categories: array of {name, amount, percentage}
+                - changes: array of recommended changes from current spending
+                
+                Return ONLY valid JSON.
+                """
+                
+                let response = try await LFM2Service.shared.inference(budgetPrompt, type: "BudgetGenerator")
+                
+                // Parse the JSON response
+                let budget = try parseBudgetFromResponse(response)
+                
+                await MainActor.run {
+                    isProcessing = false
+                    onFinalize(budget)
+                }
+            } catch {
+                await MainActor.run {
+                    isProcessing = false
+                    errorMessage = "Failed to generate budget: \(error.localizedDescription)"
+                    
+                    // Fallback to a default budget if generation fails
+                    let defaultBudget = Budget(
+                        id: UUID(),
+                        monthlyTarget: 5000,
+                        categories: [
+                            Budget.CategoryAllocation(name: "Housing", amount: 1500, percentage: 30),
+                            Budget.CategoryAllocation(name: "Food & Dining", amount: 600, percentage: 12),
+                            Budget.CategoryAllocation(name: "Transportation", amount: 400, percentage: 8),
+                            Budget.CategoryAllocation(name: "Utilities", amount: 200, percentage: 4),
+                            Budget.CategoryAllocation(name: "Shopping", amount: 300, percentage: 6),
+                            Budget.CategoryAllocation(name: "Healthcare", amount: 250, percentage: 5),
+                            Budget.CategoryAllocation(name: "Entertainment", amount: 250, percentage: 5),
+                            Budget.CategoryAllocation(name: "Savings", amount: 1500, percentage: 30)
+                        ],
+                        changes: ["Budget generated from default template due to processing error"],
+                        createdDate: Date()
+                    )
+                    onFinalize(defaultBudget)
+                }
+            }
+        }
+    }
+    
+    private func parseBudgetFromResponse(_ response: String) throws -> Budget {
+        // Extract JSON from response
+        var jsonString = response
+        if let startIndex = response.firstIndex(of: "{"),
+           let endIndex = response.lastIndex(of: "}") {
+            jsonString = String(response[startIndex...endIndex])
+        }
+        
+        guard let data = jsonString.data(using: .utf8) else {
+            throw NSError(domain: "BudgetParsing", code: 1, userInfo: [NSLocalizedDescriptionKey: "Invalid response format"])
+        }
+        
+        let json = try JSONSerialization.jsonObject(with: data) as? [String: Any] ?? [:]
+        
+        let monthlyTarget = json["monthlyTarget"] as? Double ?? 5000
+        let categoriesArray = json["categories"] as? [[String: Any]] ?? []
+        let changes = json["changes"] as? [String] ?? []
+        
+        let categories = categoriesArray.map { cat in
+            Budget.CategoryAllocation(
+                name: cat["name"] as? String ?? "Unknown",
+                amount: cat["amount"] as? Double ?? 0,
+                percentage: cat["percentage"] as? Int ?? 0
+            )
+        }
+        
+        return Budget(
             id: UUID(),
-            monthlyTarget: 7000,
-            categories: [
-                Budget.CategoryAllocation(name: "Housing", amount: 2400, percentage: 34),
-                Budget.CategoryAllocation(name: "Food", amount: 700, percentage: 10),
-                Budget.CategoryAllocation(name: "Transportation", amount: 450, percentage: 6),
-                Budget.CategoryAllocation(name: "Entertainment", amount: 280, percentage: 4),
-                Budget.CategoryAllocation(name: "Shopping", amount: 420, percentage: 6),
-                Budget.CategoryAllocation(name: "Healthcare", amount: 350, percentage: 5),
-                Budget.CategoryAllocation(name: "Savings", amount: 2400, percentage: 35)
-            ],
-            changes: [
-                "Reduced entertainment spending by $120/month",
-                "Decreased shopping budget by $180/month",
-                "Increased savings allocation by $400/month"
-            ],
+            monthlyTarget: monthlyTarget,
+            categories: categories.isEmpty ? getDefaultCategories(for: monthlyTarget) : categories,
+            changes: changes.isEmpty ? ["Budget optimized based on your spending patterns"] : changes,
             createdDate: Date()
         )
-        
-        onFinalize(budget)
+    }
+    
+    private func getDefaultCategories(for total: Double) -> [Budget.CategoryAllocation] {
+        return [
+            Budget.CategoryAllocation(name: "Housing", amount: total * 0.30, percentage: 30),
+            Budget.CategoryAllocation(name: "Food & Dining", amount: total * 0.12, percentage: 12),
+            Budget.CategoryAllocation(name: "Transportation", amount: total * 0.08, percentage: 8),
+            Budget.CategoryAllocation(name: "Savings", amount: total * 0.30, percentage: 30),
+            Budget.CategoryAllocation(name: "Other", amount: total * 0.20, percentage: 20)
+        ]
     }
 }
 

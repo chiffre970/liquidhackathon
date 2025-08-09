@@ -16,23 +16,40 @@ class LFM2Service {
     
     init(config: LFM2ConfigProtocol = Environment.current.lfm2Config) {
         self.config = config
-        Task {
-            await initializeModel()
-        }
+        // Don't auto-initialize - wait for explicit initialization
     }
     
-    private func initializeModel() async {
-        logger.info("Initializing LFM2 model")
+    // Public method to initialize the model when ready
+    func initialize(modelSize: LEAPSDKManager.ModelSize? = nil) async {
+        let size = modelSize ?? LFM2Config.defaultModelSize
+        await initializeModel(modelSize: size)
+    }
+    
+    private func initializeModel(modelSize: LEAPSDKManager.ModelSize) async {
+        logger.info("Initializing LFM2 model: \(modelSize.displayName)")
         let startTime = logger.startTimer("Model Initialization")
         
         do {
-            try await leapSDK.initialize()
+            try await leapSDK.initialize(modelSize: modelSize)
             logger.endTimer("Model Initialization", start: startTime)
-            logger.success("LFM2 model initialized successfully")
+            logger.success("LFM2 model \(modelSize.displayName) initialized successfully")
         } catch {
             logger.error("Failed to initialize LFM2 model: \(error)")
-            fatalError("Cannot proceed without LFM2 model: \(error)")
+            // Don't fatal error - allow app to handle the error
+            print("⚠️ Model initialization failed: \(error)")
         }
+    }
+    
+    // Check if model is loaded
+    func isModelLoaded() -> Bool {
+        return leapSDK.getCurrentModelSize() != nil
+    }
+    
+    // Switch to a different model
+    func switchModel(to modelSize: LEAPSDKManager.ModelSize) async throws {
+        logger.info("Switching to model: \(modelSize.displayName)")
+        try await leapSDK.switchModel(to: modelSize)
+        logger.success("Switched to model: \(modelSize.displayName)")
     }
     
     // MARK: - Core Inference
@@ -181,6 +198,36 @@ class LFM2Service {
     
     // MARK: - Specialized Inference Methods
     
+    func parseCSV(_ csvContent: String) async throws -> [[String: Any]] {
+        logger.info("Parsing CSV content with LFM2")
+        
+        let prompt = promptManager.fillTemplate(
+            type: .transactionParser,
+            variables: [
+                "csv_content": csvContent,
+                "categories": loadCategories()
+            ]
+        )
+        
+        let result = try await inference(prompt, type: "CSVParser")
+        return try parseJSONResponse(result)
+    }
+    
+    func deduplicateTransactions(_ transactions: [[String: Any]]) async throws -> [[String: Any]] {
+        logger.info("Deduplicating \(transactions.count) transactions with LFM2")
+        
+        let transactionsJSON = try JSONSerialization.data(withJSONObject: transactions)
+        let transactionsString = String(data: transactionsJSON, encoding: .utf8) ?? "[]"
+        
+        let prompt = promptManager.fillTemplate(
+            type: .transactionDeduplicator,
+            variables: ["transactions_json": transactionsString]
+        )
+        
+        let result = try await inference(prompt, type: "Deduplicator")
+        return try parseJSONResponse(result)
+    }
+    
     func categorizeTransaction(_ text: String, context: [String] = []) async throws -> String {
         let prompt = promptManager.fillTemplate(
             type: .categoryClassifier,
@@ -242,6 +289,36 @@ class LFM2Service {
     }
     
     // MARK: - Helper Methods
+    
+    private func loadCategories() -> String {
+        guard let url = Bundle.main.url(forResource: "categories", withExtension: "txt", subdirectory: "../Resources"),
+              let categories = try? String(contentsOf: url) else {
+            logger.warning("Could not load categories.txt, using default categories")
+            return "Housing\nFood & Dining\nTransportation\nHealthcare\nEntertainment\nShopping\nSavings\nUtilities\nIncome\nOther"
+        }
+        return categories
+    }
+    
+    private func parseJSONResponse(_ response: String) throws -> [[String: Any]] {
+        // Extract JSON from the response (LFM2 might include extra text)
+        var jsonString = response
+        
+        // Find JSON array in the response
+        if let startIndex = response.firstIndex(of: "["),
+           let endIndex = response.lastIndex(of: "]") {
+            jsonString = String(response[startIndex...endIndex])
+        }
+        
+        guard let data = jsonString.data(using: .utf8) else {
+            throw LFM2Error.invalidResponse("Could not convert response to data")
+        }
+        
+        guard let json = try JSONSerialization.jsonObject(with: data) as? [[String: Any]] else {
+            throw LFM2Error.invalidResponse("Response is not a valid JSON array")
+        }
+        
+        return json
+    }
     
     private func extractCategory(from response: String) -> String {
         // Categories we expect from the model

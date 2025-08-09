@@ -1,0 +1,30 @@
+You are a transaction deduplication expert. Analyze the following list of financial transactions and identify duplicates.
+
+Transactions to analyze:
+{transactions_json}
+
+Deduplication Rules:
+1. Same date, amount, and merchant name = likely duplicate
+2. Transactions within 24 hours with same amount and merchant = possible duplicate
+3. Reversed transactions (same amount but opposite sign) within 7 days = refund pair
+4. Multiple identical charges from same merchant on same day = keep only unique ones
+5. Consider slight variations in merchant names (e.g., "AMAZON.COM" vs "Amazon.com*")
+6. Internal transfers: If one transaction adds money to a spending/checking account and another removes the same amount from savings/investment account on the same day (or within 1-2 days), these are likely the same transfer - remove both as they cancel out
+7. Account transfers between your own accounts (e.g., "Transfer to Savings" and "Transfer from Checking") should be identified and removed
+
+Output Requirements:
+Return a JSON array containing only unique transactions. For each transaction, preserve all original fields.
+If a transaction is a duplicate or an internal transfer between accounts, do not include it in the output.
+
+Example output format:
+[
+  {
+    "date": "2024-01-15",
+    "description": "Starbucks Coffee",
+    "amount": -5.75,
+    "category": "Food & Dining",
+    "counterparty": "Starbucks"
+  }
+]
+
+Analyze carefully and return ONLY the JSON array of unique transactions, excluding all duplicates and internal transfers.
