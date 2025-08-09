@@ -5,6 +5,9 @@ struct BudgetChatView: View {
     @Binding var inputText: String
     let onFinalize: (Budget) -> Void
     @FocusState private var isTextFieldFocused: Bool
+    @StateObject private var lfm2Manager = LFM2Manager.shared
+    @State private var isProcessing = false
+    @State private var errorMessage: String?
     
     var body: some View {
         VStack(spacing: 0) {
@@ -40,17 +43,30 @@ struct BudgetChatView: View {
                     .focused($isTextFieldFocused)
                 
                 Button(action: sendMessage) {
-                    Image(systemName: "paperplane.fill")
-                        .font(.custom("Inter", size: 16))
-                        .foregroundColor(.veraWhite)
-                        .rotationEffect(.degrees(45))
-                        .padding(12)
-                        .background(inputText.isEmpty ? Color.veraGrey : Color.veraLightGreen)
-                        .clipShape(Circle())
+                    if isProcessing {
+                        ProgressView()
+                            .scaleEffect(0.8)
+                            .frame(width: 40, height: 40)
+                    } else {
+                        Image(systemName: "paperplane.fill")
+                            .font(.custom("Inter", size: 16))
+                            .foregroundColor(.veraWhite)
+                            .rotationEffect(.degrees(45))
+                            .padding(12)
+                            .background(inputText.isEmpty ? Color.veraGrey : Color.veraLightGreen)
+                            .clipShape(Circle())
+                    }
                 }
-                .disabled(inputText.isEmpty)
+                .disabled(inputText.isEmpty || isProcessing)
             }
             .padding(.top, 12)
+            
+            if let error = errorMessage {
+                Text(error)
+                    .font(.veraCaption())
+                    .foregroundColor(.red)
+                    .padding(.top, 8)
+            }
             
             if messages.count > 3 {
                 VButton(title: "Finalize Budget", style: .primary, isFullWidth: true) {
@@ -74,28 +90,30 @@ struct BudgetChatView: View {
         messages.append(userMessage)
         let messageContent = inputText
         inputText = ""
+        isProcessing = true
+        errorMessage = nil
         
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
-            let aiResponse = generateAIResponse(for: messageContent)
-            messages.append(ChatMessage(
-                id: UUID(),
-                content: aiResponse,
-                isUser: false,
-                timestamp: Date()
-            ))
+        Task {
+            do {
+                let aiResponse = try await lfm2Manager.negotiateBudget(messageContent, context: messages)
+                await MainActor.run {
+                    messages.append(ChatMessage(
+                        id: UUID(),
+                        content: aiResponse,
+                        isUser: false,
+                        timestamp: Date()
+                    ))
+                    isProcessing = false
+                }
+            } catch {
+                await MainActor.run {
+                    errorMessage = "Failed to generate response: \(error.localizedDescription)"
+                    isProcessing = false
+                }
+            }
         }
     }
     
-    private func generateAIResponse(for message: String) -> String {
-        let responses = [
-            "That's a great goal! Based on your spending history, I can see opportunities to optimize your budget. Would you like to focus on reducing discretionary spending or increasing savings?",
-            "I understand. Let me analyze your transaction patterns to create a realistic budget. Your current spending shows room for improvement in entertainment and shopping categories.",
-            "Excellent choice! I'll create a budget that allocates 20% to savings while maintaining your essential expenses. This should help you reach your goals faster.",
-            "Based on our discussion, I've prepared a budget that balances your needs with your financial goals. Ready to review it?"
-        ]
-        
-        return responses[min(messages.filter { $0.isUser }.count, responses.count - 1)]
-    }
     
     private func createBudget() {
         let budget = Budget(

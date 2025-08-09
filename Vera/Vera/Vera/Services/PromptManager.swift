@@ -23,9 +23,10 @@ class PromptManager {
     
     private func preloadPrompts() {
         for promptType in PromptType.allCases {
-            if let prompt = loadPromptFromFile(promptType.fileName) {
-                prompts[promptType.rawValue] = prompt
+            guard let prompt = loadPromptFromFile(promptType.fileName) else {
+                fatalError("Required prompt file missing: \(promptType.fileName)")
             }
+            prompts[promptType.rawValue] = prompt
         }
     }
     
@@ -45,39 +46,19 @@ class PromptManager {
     
     func loadPrompt(_ type: PromptType) -> String {
         return promptQueue.sync {
-            if let cached = prompts[type.rawValue] {
-                return cached
+            guard let prompt = prompts[type.rawValue] else {
+                fatalError("Prompt not loaded: \(type.rawValue)")
             }
-            
-            // Try loading from file if not cached
-            if let prompt = loadPromptFromFile(type.fileName) {
-                prompts[type.rawValue] = prompt
-                return prompt
-            }
-            
-            // Return fallback prompt
-            return getFallbackPrompt(for: type)
+            return prompt
         }
     }
     
     func loadPrompt(_ name: String) -> String {
         return promptQueue.sync {
-            if let cached = prompts[name] {
-                return cached
+            guard let prompt = prompts[name] else {
+                fatalError("Prompt not loaded: \(name)")
             }
-            
-            // Try loading from file if not cached
-            if let prompt = loadPromptFromFile("\(name).prompt") {
-                prompts[name] = prompt
-                return prompt
-            }
-            
-            // Try to find by PromptType
-            if let type = PromptType(rawValue: name) {
-                return getFallbackPrompt(for: type)
-            }
-            
-            return "Process the following input: {input}"
+            return prompt
         }
     }
     
@@ -98,35 +79,6 @@ class PromptManager {
         return fillTemplate(prompt, variables: variables)
     }
     
-    private func getFallbackPrompt(for type: PromptType) -> String {
-        switch type {
-        case .transactionParser:
-            return """
-            Parse the transaction: {raw_transaction}
-            Extract merchant, amount, date, and type.
-            """
-        case .categoryClassifier:
-            return """
-            Categorize this transaction: {merchant_name} - ${amount}
-            Choose from: Housing, Food, Transportation, Healthcare, Entertainment, Shopping, Savings, Utilities, Income, Other
-            """
-        case .insightsAnalyzer:
-            return """
-            Analyze these transactions: {transactions_json}
-            Provide spending insights and recommendations.
-            """
-        case .budgetNegotiator:
-            return """
-            Help create a budget based on: {current_spending}
-            User says: {user_message}
-            """
-        case .budgetInsights:
-            return """
-            Compare budget {budget_allocations} vs actual {actual_spending}
-            Provide optimization insights.
-            """
-        }
-    }
     
     func reloadPrompts() {
         promptQueue.async(flags: .barrier) {

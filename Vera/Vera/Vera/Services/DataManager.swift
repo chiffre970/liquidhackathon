@@ -42,8 +42,15 @@ class DataManager: ObservableObject {
         for transaction in newTransactions {
             if transaction.category == nil {
                 var categorizedTransaction = transaction
-                categorizedTransaction.category = await LFM2Manager.shared.categorizeTransaction(transaction.description)
-                categorizedTransaction.isAnalyzed = true
+                do {
+                    categorizedTransaction.category = try await LFM2Manager.shared.categorizeTransaction(transaction.description)
+                    categorizedTransaction.isAnalyzed = true
+                } catch {
+                    // If categorization fails, mark as "Other" and log the error
+                    print("Failed to categorize transaction: \(error)")
+                    categorizedTransaction.category = "Other"
+                    categorizedTransaction.isAnalyzed = false
+                }
                 transactions.append(categorizedTransaction)
             } else {
                 transactions.append(transaction)

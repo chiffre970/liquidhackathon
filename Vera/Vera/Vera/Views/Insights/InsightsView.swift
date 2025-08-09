@@ -9,6 +9,8 @@ extension Calendar {
 
 struct InsightsView: View {
     @EnvironmentObject var csvProcessor: CSVProcessor
+    @StateObject private var dataManager = DataManager.shared
+    @StateObject private var lfm2Manager = LFM2Manager.shared
     @State private var selectedMonth = Date()
     @State private var cashFlow: CashFlowData?
     @State private var isAnalyzing = false
@@ -72,25 +74,25 @@ struct InsightsView: View {
     private func analyzeTransactions() {
         isAnalyzing = true
         
-        DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
-            let mockCategories = [
-                CashFlowData.Category(name: "Housing", amount: 2500, percentage: 35),
-                CashFlowData.Category(name: "Food", amount: 800, percentage: 11),
-                CashFlowData.Category(name: "Transportation", amount: 500, percentage: 7),
-                CashFlowData.Category(name: "Entertainment", amount: 400, percentage: 6),
-                CashFlowData.Category(name: "Shopping", amount: 600, percentage: 8),
-                CashFlowData.Category(name: "Healthcare", amount: 300, percentage: 4),
-                CashFlowData.Category(name: "Savings", amount: 2000, percentage: 29)
-            ]
-            
-            self.cashFlow = CashFlowData(
-                income: 7100,
-                expenses: 5100,
-                categories: mockCategories,
-                analysis: "Your spending is well-balanced across categories. Housing takes up 35% of your budget, which is within the recommended 30-40% range. You're saving 29% of your income - excellent work! Consider reviewing your shopping and entertainment expenses for potential optimization."
-            )
-            
-            self.isAnalyzing = false
+        Task {
+            do {
+                // Get transactions for the selected month
+                let transactions = dataManager.fetchTransactions(for: selectedMonth)
+                
+                // Use LFM2Manager to analyze spending with real AI
+                let cashFlowData = try await lfm2Manager.analyzeSpending(transactions)
+                
+                await MainActor.run {
+                    self.cashFlow = cashFlowData
+                    self.isAnalyzing = false
+                }
+            } catch {
+                await MainActor.run {
+                    self.isAnalyzing = false
+                    // Handle error - could show an alert or error state
+                    print("Failed to analyze transactions: \(error)")
+                }
+            }
         }
     }
 }

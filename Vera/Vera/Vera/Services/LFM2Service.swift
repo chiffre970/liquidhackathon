@@ -1,18 +1,12 @@
 import Foundation
-import CoreML
 
-// Placeholder for LEAP SDK - will be replaced when SDK is available
-// For now, using CoreML directly as a fallback
 @available(iOS 15.0, *)
 class LFM2Service {
     private let logger = TelemetryLogger.shared
     private let performanceMonitor = PerformanceMonitor.shared
     private let config: LFM2ConfigProtocol
     private let promptManager = PromptManager.shared
-    private let cacheManager = CacheManager.shared
-    
-    // Model will be loaded when LEAP SDK is available
-    private var model: MLModel?
+    private let leapSDK = LEAPSDKManager.shared
     private let modelQueue = DispatchQueue(label: "com.vera.lfm2.model", qos: .userInitiated)
     
     static let shared: LFM2Service = {
@@ -32,37 +26,18 @@ class LFM2Service {
         let startTime = logger.startTimer("Model Initialization")
         
         do {
-            // TODO: Replace with LEAP SDK initialization when available
-            // self.leapSDK = try await LEAPKit.initialize(
-            //     modelPath: LFM2Config.modelPath,
-            //     config: LEAPConfig(
-            //         maxTokens: config.maxTokens,
-            //         temperature: config.temperature
-            //     )
-            // )
-            
-            // For now, attempt to load a CoreML model if available
-            if let modelPath = LFM2Config.modelPath,
-               let modelURL = URL(string: modelPath) {
-                model = try? MLModel(contentsOf: modelURL)
-            }
-            
+            try await leapSDK.initialize()
             logger.endTimer("Model Initialization", start: startTime)
-            logger.success("Model initialized successfully")
+            logger.success("LFM2 model initialized successfully")
         } catch {
-            logger.error("Failed to initialize model: \(error)")
+            logger.error("Failed to initialize LFM2 model: \(error)")
+            fatalError("Cannot proceed without LFM2 model: \(error)")
         }
     }
     
     // MARK: - Core Inference
     
     func inference(_ prompt: String, type: String = "general") async throws -> String {
-        // Check cache first
-        if let cachedResult = cacheManager.retrieveInferenceResult(prompt: prompt, type: type) {
-            logger.info("Cache hit for \(type) inference")
-            return cachedResult
-        }
-        
         let inferenceId = performanceMonitor.startInference(type: type)
         let startTime = logger.startTimer("LFM2 Inference - \(type)")
         logger.logMemoryUsage()
@@ -78,14 +53,14 @@ class LFM2Service {
         )
         
         do {
-            logger.info("Starting inference for \(type)")
+            logger.info("Starting LFM2 inference for \(type)")
             logger.debug("Prompt preview: \(String(prompt.prefix(100)))...")
             
-            // TODO: Replace with actual LEAP SDK call
-            // let result = try await leapSDK.generate(prompt: prompt)
-            
-            // Simulate inference for now with fallback
-            let result = try await simulateInference(prompt: prompt, type: type)
+            // REAL INFERENCE - NO MOCK
+            let result = try await leapSDK.generate(
+                prompt: prompt,
+                maxTokens: config.maxTokens
+            )
             
             let endTime = DispatchTime.now()
             let processingTime = Double(endTime.uptimeNanoseconds - startTime.uptimeNanoseconds) / 1_000_000_000
@@ -111,9 +86,6 @@ class LFM2Service {
             logger.logInference(metrics)
             logger.endTimer("LFM2 Inference - \(type)", start: startTime)
             
-            // Cache the result
-            cacheManager.cacheInferenceResult(prompt: prompt, result: result, type: type)
-            
             return result
         } catch {
             metrics = TelemetryLogger.InferenceMetrics(
@@ -134,15 +106,8 @@ class LFM2Service {
                 error: error.localizedDescription
             )
             
-            logger.error("Inference failed: \(error)")
+            logger.error("LFM2 inference failed: \(error)")
             logger.logInference(metrics)
-            
-            // Fallback to keyword matching if enabled
-            if LFM2Config.fallbackToKeywordMatching {
-                logger.info("Falling back to keyword matching")
-                return try await fallbackInference(prompt: prompt, type: type)
-            }
-            
             throw error
         }
     }
@@ -226,7 +191,15 @@ class LFM2Service {
             ]
         )
         
-        return try await inference(prompt, type: "CategoryClassifier")
+        let result = try await inference(prompt, type: "CategoryClassifier")
+        
+        // Parse and validate the category from response
+        let category = extractCategory(from: result)
+        guard !category.isEmpty else {
+            throw LFM2Error.invalidResponse("Could not extract category from LFM2 response")
+        }
+        
+        return category
     }
     
     func analyzeSpending(_ transactions: [[String: Any]]) async throws -> String {
@@ -270,79 +243,26 @@ class LFM2Service {
     
     // MARK: - Helper Methods
     
-    private func simulateInference(prompt: String, type: String) async throws -> String {
-        // Simulate processing delay
-        try await Task.sleep(nanoseconds: 100_000_000) // 0.1 seconds
+    private func extractCategory(from response: String) -> String {
+        // Categories we expect from the model
+        let validCategories = ["Housing", "Food", "Transportation", "Healthcare", 
+                              "Entertainment", "Shopping", "Savings", "Utilities", 
+                              "Income", "Other"]
         
-        // Return mock responses based on type
-        switch type {
-        case "CategoryClassifier":
-            return performKeywordCategorization(prompt)
-        case "InsightsAnalyzer":
-            return generateMockInsights()
-        case "BudgetNegotiator":
-            return generateMockBudgetResponse()
-        default:
-            return "Processed: \(prompt.prefix(50))..."
+        // Try to find a valid category in the response
+        for category in validCategories {
+            if response.contains(category) {
+                return category
+            }
         }
-    }
-    
-    private func fallbackInference(prompt: String, type: String) async throws -> String {
-        logger.info("Using fallback inference for type: \(type)")
         
-        switch type {
-        case "CategoryClassifier":
-            return performKeywordCategorization(prompt)
-        case "InsightsAnalyzer":
-            return generateMockInsights()
-        case "BudgetNegotiator":
-            return generateMockBudgetResponse()
-        default:
-            throw LFM2Error.fallbackNotAvailable
+        // If response is just the category name
+        let trimmed = response.trimmingCharacters(in: .whitespacesAndNewlines)
+        if validCategories.contains(trimmed) {
+            return trimmed
         }
-    }
-    
-    private func performKeywordCategorization(_ text: String) -> String {
-        let lowercased = text.lowercased()
         
-        // Simple keyword matching
-        if lowercased.contains("grocery") || lowercased.contains("food") || lowercased.contains("restaurant") {
-            return "Food"
-        } else if lowercased.contains("rent") || lowercased.contains("mortgage") {
-            return "Housing"
-        } else if lowercased.contains("gas") || lowercased.contains("uber") || lowercased.contains("lyft") {
-            return "Transportation"
-        } else if lowercased.contains("doctor") || lowercased.contains("pharmacy") || lowercased.contains("health") {
-            return "Healthcare"
-        } else if lowercased.contains("netflix") || lowercased.contains("movie") || lowercased.contains("game") {
-            return "Entertainment"
-        } else if lowercased.contains("amazon") || lowercased.contains("store") || lowercased.contains("shop") {
-            return "Shopping"
-        } else if lowercased.contains("electric") || lowercased.contains("water") || lowercased.contains("internet") {
-            return "Utilities"
-        } else if lowercased.contains("paycheck") || lowercased.contains("salary") || lowercased.contains("deposit") {
-            return "Income"
-        } else {
-            return "Other"
-        }
-    }
-    
-    private func generateMockInsights() -> String {
-        return """
-        Your spending is 15% higher than last month, primarily in Food (+$234) and Entertainment (+$156). 
-        Consider reducing dining out expenses which account for 42% of your food budget. 
-        You're on track with your savings goal, having saved $500 this month.
-        """
-    }
-    
-    private func generateMockBudgetResponse() -> String {
-        return """
-        I understand you want to save more. Based on your spending, I recommend:
-        - Reduce Food budget to 15% (currently 22%)
-        - Set Entertainment to 5% (currently 8%)
-        - This would free up $300/month for savings
-        Would you like to adjust any specific categories?
-        """
+        return ""
     }
     
     private func extractAmount(from text: String) -> String {
@@ -399,7 +319,7 @@ enum LFM2Error: LocalizedError {
     case modelNotLoaded
     case inferenceTimeout
     case invalidPrompt
-    case fallbackNotAvailable
+    case invalidResponse(String)
     case memoryLimitExceeded
     
     var errorDescription: String? {
@@ -410,8 +330,8 @@ enum LFM2Error: LocalizedError {
             return "Inference operation timed out"
         case .invalidPrompt:
             return "Invalid prompt provided"
-        case .fallbackNotAvailable:
-            return "No fallback available for this operation"
+        case .invalidResponse(let details):
+            return "Invalid LFM2 response: \(details)"
         case .memoryLimitExceeded:
             return "Memory limit exceeded"
         }

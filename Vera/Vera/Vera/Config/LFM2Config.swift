@@ -3,17 +3,17 @@ import Foundation
 struct LFM2Config {
     // Model Configuration
     static let modelName = "lfm2-700m"
-    static let modelPath = Bundle.main.path(forResource: "lfm2-700m", ofType: "mlmodel")
+    static let modelPath = Bundle.main.path(forResource: "lfm2-700m", ofType: "onnx")
     static let maxTokens = 512
-    static let temperature = 0.7
-    static let topP = 0.9
-    static let topK = 40
+    static let temperature = 0.6  // Lower for more consistent output
+    static let topP = 0.85
+    static let topK = 30
     
     // Processing Configuration
-    static let batchSize = 10
-    static let maxConcurrentTasks = 3
-    static let timeoutSeconds = 30
-    static let cacheEnabled = true
+    static let batchSize = 15
+    static let maxConcurrentTasks = 4
+    static let timeoutSeconds = 20
+    static let cacheEnabled = false  // Disable for real-time accuracy
     static let cacheExpirationHours = 24
     
     // Memory Management
@@ -21,17 +21,16 @@ struct LFM2Config {
     static let lowMemoryThreshold = 0.8
     
     // Feature Flags
-    static let useStreamingInference = false
-    static let enableDebugLogging = true
-    static let fallbackToKeywordMatching = true
+    static let useStreamingInference = true
+    static let enableDebugLogging = false  // Disable for production
     
     // Telemetry Configuration
     static let enableTelemetry = true
-    static let telemetryVerbosity: TelemetryLogger.LogLevel = .info
-    static let logInferenceDetails = true
+    static let telemetryVerbosity: TelemetryLogger.LogLevel = .warning  // Only warnings and errors
+    static let logInferenceDetails = false
     static let logMemoryUsage = true
     static let logPerformanceMetrics = true
-    static let sessionStatsInterval = 10 // Log stats every N inferences
+    static let sessionStatsInterval = 100 // Log stats every N inferences
 }
 
 protocol LFM2ConfigProtocol {
@@ -78,6 +77,6 @@ struct LFM2ConfigProd: LFM2ConfigProtocol {
     let batchSize = 15
     let maxConcurrentTasks = 4
     let timeoutSeconds = 20
-    let cacheEnabled = true
+    let cacheEnabled = false  // Disable for real-time accuracy
     let enableDebugLogging = false
 }

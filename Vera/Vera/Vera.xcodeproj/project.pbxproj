@@ -195,6 +195,9 @@
 			);
 			mainGroup = 8CE8DB0E2E457610006A9CB2;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				8CE8DBA92E46C367006A9CB2 /* XCRemoteSwiftPackageReference "leap-ios" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 8CE8DB182E457610006A9CB2 /* Products */;
 			projectDirPath = "";
@@ -558,6 +561,17 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		8CE8DBA92E46C367006A9CB2 /* XCRemoteSwiftPackageReference "leap-ios" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/Liquid4All/leap-ios.git";
+			requirement = {
+				branch = main;
+				kind = branch;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
 	};
 	rootObject = 8CE8DB0F2E457610006A9CB2 /* Project object */;
 }
