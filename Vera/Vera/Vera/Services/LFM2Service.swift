@@ -41,15 +41,10 @@ class LFM2Service {
     
     // Check if model is loaded
     func isModelLoaded() -> Bool {
-        return leapSDK.getCurrentModelSize() != nil
+        return leapSDK.isModelReady()
     }
     
-    // Switch to a different model
-    func switchModel(to modelSize: LEAPSDKManager.ModelSize) async throws {
-        logger.info("Switching to model: \(modelSize.displayName)")
-        try await leapSDK.switchModel(to: modelSize)
-        logger.success("Switched to model: \(modelSize.displayName)")
-    }
+    // Model switching is no longer supported - using only 350M model
     
     // MARK: - Core Inference
     
@@ -209,6 +204,11 @@ class LFM2Service {
         )
         
         let result = try await inference(prompt, type: "CSVParser")
+        
+        // Debug: Log raw LFM2 output
+        logger.info("Raw LFM2 output (\(result.count) chars): \(result.prefix(500))")
+        print("🔍 Raw LFM2 response preview: \(result.prefix(200))...")
+        
         return try parseJSONResponse(result)
     }
     
@@ -299,24 +299,56 @@ class LFM2Service {
     }
     
     private func parseJSONResponse(_ response: String) throws -> [[String: Any]] {
-        // Extract JSON from the response (LFM2 might include extra text)
-        var jsonString = response
+        logger.debug("Attempting to parse JSON from response: \(response.prefix(500))...")
+        
+        // Clean up the response first
+        var cleanedResponse = response
+            .replacingOccurrences(of: "```json", with: "")
+            .replacingOccurrences(of: "```", with: "")
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        
+        // Try to extract JSON array
+        var jsonString = cleanedResponse
         
         // Find JSON array in the response
-        if let startIndex = response.firstIndex(of: "["),
-           let endIndex = response.lastIndex(of: "]") {
-            jsonString = String(response[startIndex...endIndex])
+        if let startIndex = cleanedResponse.firstIndex(of: "["),
+           let endIndex = cleanedResponse.lastIndex(of: "]") {
+            jsonString = String(cleanedResponse[startIndex...endIndex])
+            logger.debug("Extracted JSON array: \(jsonString.prefix(200))...")
+        } else if cleanedResponse.contains("{") && cleanedResponse.contains("}") {
+            // Try to find a single JSON object and wrap in array
+            if let startIndex = cleanedResponse.firstIndex(of: "{"),
+               let endIndex = cleanedResponse.lastIndex(of: "}") {
+                let singleObject = String(cleanedResponse[startIndex...endIndex])
+                jsonString = "[\(singleObject)]"
+                logger.debug("Found single object, wrapped in array: \(jsonString.prefix(200))...")
+            }
         }
         
         guard let data = jsonString.data(using: .utf8) else {
-            throw LFM2Error.invalidResponse("Could not convert response to data")
+            logger.error("Could not convert to data: \(jsonString.prefix(100))...")
+            // Return empty array as fallback to prevent crash
+            logger.warning("Returning empty array as fallback")
+            return []
         }
         
-        guard let json = try JSONSerialization.jsonObject(with: data) as? [[String: Any]] else {
-            throw LFM2Error.invalidResponse("Response is not a valid JSON array")
+        do {
+            if let json = try JSONSerialization.jsonObject(with: data) as? [[String: Any]] {
+                logger.success("Successfully parsed \(json.count) transactions")
+                return json
+            } else if let singleJson = try JSONSerialization.jsonObject(with: data) as? [String: Any] {
+                logger.success("Successfully parsed single transaction")
+                return [singleJson]
+            } else {
+                logger.warning("Response not in expected format, returning empty array")
+                return []
+            }
+        } catch {
+            logger.error("JSON parsing failed: \(error)")
+            logger.error("Attempted to parse: \(jsonString.prefix(200))...")
+            // Return empty array to prevent crash
+            return []
         }
-        
-        return json
     }
     
     private func extractCategory(from response: String) -> String {

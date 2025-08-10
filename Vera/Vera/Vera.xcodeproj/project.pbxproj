@@ -7,8 +7,11 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		8CC427B42E4845DD003D5E74 /* Accelerate.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8CC427B32E4845DD003D5E74 /* Accelerate.framework */; };
+		8CC427B62E4845E5003D5E74 /* Metal.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8CC427B52E4845E5003D5E74 /* Metal.framework */; };
+		8CC427B82E4845F0003D5E74 /* MetalPerformanceShaders.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8CC427B72E4845F0003D5E74 /* MetalPerformanceShaders.framework */; };
+		8CC427BA2E4845F5003D5E74 /* CoreML.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8CC427B92E4845F5003D5E74 /* CoreML.framework */; };
 		8CE8DBBC2E46E681006A9CB2 /* LeapSDK in Frameworks */ = {isa = PBXBuildFile; productRef = 8CE8DBBB2E46E681006A9CB2 /* LeapSDK */; };
-		8CE8DBBE2E46E681006A9CB2 /* LeapSDKConstrainedGeneration in Frameworks */ = {isa = PBXBuildFile; productRef = 8CE8DBBD2E46E681006A9CB2 /* LeapSDKConstrainedGeneration */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -29,6 +32,10 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		8CC427B32E4845DD003D5E74 /* Accelerate.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Accelerate.framework; path = System/Library/Frameworks/Accelerate.framework; sourceTree = SDKROOT; };
+		8CC427B52E4845E5003D5E74 /* Metal.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Metal.framework; path = System/Library/Frameworks/Metal.framework; sourceTree = SDKROOT; };
+		8CC427B72E4845F0003D5E74 /* MetalPerformanceShaders.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = MetalPerformanceShaders.framework; path = System/Library/Frameworks/MetalPerformanceShaders.framework; sourceTree = SDKROOT; };
+		8CC427B92E4845F5003D5E74 /* CoreML.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreML.framework; path = System/Library/Frameworks/CoreML.framework; sourceTree = SDKROOT; };
 		8CE8DB172E457610006A9CB2 /* Vera.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Vera.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		8CE8DB292E457611006A9CB2 /* VeraTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = VeraTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		8CE8DB332E457611006A9CB2 /* VeraUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = VeraUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -57,7 +64,10 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				8CE8DBBE2E46E681006A9CB2 /* LeapSDKConstrainedGeneration in Frameworks */,
+				8CC427BA2E4845F5003D5E74 /* CoreML.framework in Frameworks */,
+				8CC427B82E4845F0003D5E74 /* MetalPerformanceShaders.framework in Frameworks */,
+				8CC427B62E4845E5003D5E74 /* Metal.framework in Frameworks */,
+				8CC427B42E4845DD003D5E74 /* Accelerate.framework in Frameworks */,
 				8CE8DBBC2E46E681006A9CB2 /* LeapSDK in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -79,12 +89,24 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		8CC427B22E4845DD003D5E74 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				8CC427B92E4845F5003D5E74 /* CoreML.framework */,
+				8CC427B72E4845F0003D5E74 /* MetalPerformanceShaders.framework */,
+				8CC427B52E4845E5003D5E74 /* Metal.framework */,
+				8CC427B32E4845DD003D5E74 /* Accelerate.framework */,
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
 		8CE8DB0E2E457610006A9CB2 = {
 			isa = PBXGroup;
 			children = (
 				8CE8DB192E457610006A9CB2 /* Vera */,
 				8CE8DB2C2E457611006A9CB2 /* VeraTests */,
 				8CE8DB362E457611006A9CB2 /* VeraUITests */,
+				8CC427B22E4845DD003D5E74 /* Frameworks */,
 				8CE8DB182E457610006A9CB2 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -120,7 +142,6 @@
 			name = Vera;
 			packageProductDependencies = (
 				8CE8DBBB2E46E681006A9CB2 /* LeapSDK */,
-				8CE8DBBD2E46E681006A9CB2 /* LeapSDKConstrainedGeneration */,
 			);
 			productName = Vera;
 			productReference = 8CE8DB172E457610006A9CB2 /* Vera.app */;
@@ -422,6 +443,10 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
+				OTHER_LDFLAGS = (
+					"-ObjC",
+					"-all_load",
+				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.lechiffre.Vera;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
@@ -450,6 +475,10 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
+				OTHER_LDFLAGS = (
+					"-ObjC",
+					"-all_load",
+				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.lechiffre.Vera;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
@@ -576,8 +605,8 @@
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/Liquid4All/leap-ios.git";
 			requirement = {
-				kind = upToNextMajorVersion;
-				minimumVersion = "0.3.0-2";
+				branch = main;
+				kind = branch;
 			};
 		};
 /* End XCRemoteSwiftPackageReference section */
@@ -587,11 +616,6 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 8CE8DBBA2E46E681006A9CB2 /* XCRemoteSwiftPackageReference "leap-ios" */;
 			productName = LeapSDK;
-		};
-		8CE8DBBD2E46E681006A9CB2 /* LeapSDKConstrainedGeneration */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = 8CE8DBBA2E46E681006A9CB2 /* XCRemoteSwiftPackageReference "leap-ios" */;
-			productName = LeapSDKConstrainedGeneration;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

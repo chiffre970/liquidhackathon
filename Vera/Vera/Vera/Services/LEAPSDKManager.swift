@@ -1,5 +1,9 @@
 import Foundation
 import LeapSDK
+// Import other LEAP modules if available
+#if canImport(LeapSDKTypes)
+import LeapSDKTypes
+#endif
 
 @available(iOS 15.0, *)
 class LEAPSDKManager {
@@ -25,26 +29,155 @@ class LEAPSDKManager {
         }
         
         // Look for the model bundle in the app
-        guard let modelURL = Bundle.main.url(
+        // First, let's debug what's in the bundle
+        print("🔍 Main bundle path: \(Bundle.main.bundlePath)")
+        print("🔍 Main bundle resource path: \(Bundle.main.resourcePath ?? "nil")")
+        
+        // List all bundle contents for debugging
+        if let resourcePath = Bundle.main.resourcePath {
+            do {
+                let contents = try FileManager.default.contentsOfDirectory(atPath: resourcePath)
+                print("📦 Bundle contents: \(contents.filter { $0.contains("LFM2") || $0.contains(".bundle") })")
+            } catch {
+                print("❌ Could not list bundle contents: \(error)")
+            }
+        }
+        
+        var foundModelURL: URL? = Bundle.main.url(
             forResource: modelFileName,
             withExtension: "bundle"
-        ) else {
+        )
+        
+        // If not found in standard location, try alternative paths
+        if foundModelURL == nil {
+            let alternativePaths = [
+                Bundle.main.bundleURL.appendingPathComponent("\(modelFileName).bundle"),
+                Bundle.main.bundleURL.appendingPathComponent("Frameworks/\(modelFileName).bundle"),
+                Bundle.main.resourceURL?.appendingPathComponent("\(modelFileName).bundle")
+            ].compactMap { $0 }
+            
+            for path in alternativePaths {
+                print("🔍 Checking alternative path: \(path.path)")
+                if FileManager.default.fileExists(atPath: path.path) {
+                    print("✅ Found model at alternative path!")
+                    foundModelURL = path
+                    break
+                }
+            }
+        }
+        
+        guard let modelURL = foundModelURL else {
             throw LEAPError.modelNotFound("Model file '\(modelFileName).bundle' not found in app bundle")
         }
         
-        print("Loading model: \(modelDisplayName) from \(modelURL.lastPathComponent)")
+        // Copy the model bundle to a writable location (Library directory)
+        // This is required because LEAP SDK needs to create cache files
+        let libraryURL = FileManager.default.urls(for: .libraryDirectory, in: .userDomainMask).first!
+        let writableModelURL = libraryURL.appendingPathComponent("\(modelFileName).bundle")
         
-        // Load the model using LeapSDK
+        if !FileManager.default.fileExists(atPath: writableModelURL.path) {
+            do {
+                try FileManager.default.copyItem(at: modelURL, to: writableModelURL)
+                print("📄 Copied model bundle to writable Library directory: \(writableModelURL.path)")
+            } catch {
+                print("⚠️ Failed to copy model bundle to writable location: \(error)")
+                print("Will attempt to load from read-only bundle (may fail)")
+            }
+        } else {
+            print("📄 Writable model bundle already exists at: \(writableModelURL.path)")
+        }
+        
+        // Use the writable copy if it exists, otherwise fallback to original
+        let loadURL = FileManager.default.fileExists(atPath: writableModelURL.path) ? writableModelURL : modelURL
+        
+        print("Loading model: \(modelDisplayName) from \(loadURL.lastPathComponent)")
+        print("Model URL path: \(loadURL.path)")
+        
+        // Verify the bundle exists and is accessible at the load location
+        let fileManager = FileManager.default
+        if fileManager.fileExists(atPath: loadURL.path) {
+            print("✅ Model bundle file exists at load location")
+            
+            // Check if it's a directory (proper bundle) or a file
+            var isDirectory: ObjCBool = false
+            fileManager.fileExists(atPath: loadURL.path, isDirectory: &isDirectory)
+            print("Is directory: \(isDirectory.boolValue)")
+            
+            // List contents of the bundle
+            if isDirectory.boolValue {
+                if let contents = try? fileManager.contentsOfDirectory(atPath: loadURL.path) {
+                    print("Bundle contents at load location: \(contents)")
+                }
+            }
+            
+            // Get bundle size
+            var totalSize: Int64 = 0
+            if let enumerator = fileManager.enumerator(atPath: loadURL.path) {
+                while let file = enumerator.nextObject() as? String {
+                    let filePath = loadURL.appendingPathComponent(file).path
+                    if let attributes = try? fileManager.attributesOfItem(atPath: filePath),
+                       let fileSize = attributes[FileAttributeKey.size] as? Int64 {
+                        totalSize += fileSize
+                    }
+                }
+            }
+            print("Total model size: \(totalSize / 1024 / 1024) MB")
+        } else {
+            print("❌ Model bundle file does NOT exist at load path")
+        }
+        
+        // Check for required files in the bundle
+        let modelFileURL = loadURL.appendingPathComponent("model.pte")
+        let configFileURL = loadURL.appendingPathComponent("config.yaml")
+        
+        if fileManager.fileExists(atPath: modelFileURL.path) {
+            print("✅ Found model.pte inside bundle")
+        } else {
+            print("⚠️ model.pte not found in bundle")
+        }
+        
+        if fileManager.fileExists(atPath: configFileURL.path) {
+            print("✅ Found config.yaml inside bundle")
+        } else {
+            print("⚠️ config.yaml not found in bundle")
+        }
+        
+        // Load the model using LeapSDK - pass the bundle directory (not model.pte)
         do {
-            modelRunner = try await LeapSDK.Leap.load(url: modelURL)
+            print("Attempting to load model with LeapSDK from bundle directory...")
+            print("Loading from: \(loadURL.path)")
+            
+            // LEAP SDK expects the bundle directory containing config.yaml and model.pte
+            modelRunner = try await LeapSDK.Leap.load(url: loadURL)
             
             // Create a conversation instance for managing chat interactions
             conversation = LeapSDK.Conversation(modelRunner: modelRunner!, history: [])
             isModelLoaded = true
             
-            print("Successfully loaded \(modelDisplayName)")
+            print("✅ Successfully loaded \(modelDisplayName)")
         } catch {
-            throw LEAPError.modelLoadFailed("Failed to load \(modelDisplayName): \(error.localizedDescription)")
+            print("❌ Failed to load model: \(error)")
+            print("Error type: \(type(of: error))")
+            print("Error details: \(error.localizedDescription)")
+            
+            // If loading from writable location failed, try a clean copy
+            if loadURL == writableModelURL {
+                print("Attempting to remove and re-copy model bundle...")
+                try? FileManager.default.removeItem(at: writableModelURL)
+                
+                do {
+                    try FileManager.default.copyItem(at: modelURL, to: writableModelURL)
+                    print("Re-copied model bundle, attempting load again...")
+                    modelRunner = try await LeapSDK.Leap.load(url: writableModelURL)
+                    conversation = LeapSDK.Conversation(modelRunner: modelRunner!, history: [])
+                    isModelLoaded = true
+                    print("✅ Successfully loaded after re-copy")
+                } catch {
+                    throw LEAPError.modelLoadFailed("Failed to load \(modelDisplayName) even after re-copy: \(error.localizedDescription)")
+                }
+            } else {
+                throw LEAPError.modelLoadFailed("Failed to load \(modelDisplayName): \(error.localizedDescription)")
+            }
         }
     }
     

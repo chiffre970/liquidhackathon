@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import LeapSDK
 
 @main
 struct VeraApp: App {
@@ -13,6 +14,16 @@ struct VeraApp: App {
     @StateObject private var csvProcessor = CSVProcessor()
     @StateObject private var dataManager = DataManager.shared
     @StateObject private var lfm2Manager = LFM2Manager.shared
+    
+    init() {
+        // Attempt to initialize/register backends
+        // This might help with XnnpackBackend registration
+        print("🚀 Initializing Vera app...")
+        
+        // Some frameworks require explicit initialization
+        // Try to trigger any static initialization
+        _ = LeapSDK.Leap.self
+    }
 
     var body: some Scene {
         WindowGroup {
