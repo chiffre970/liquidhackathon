@@ -163,9 +163,15 @@ class DataManager: ObservableObject {
     }
     
     func clearAllData() {
+        print("🗑️ DataManager: Clearing all data...")
+        let transactionCount = transactions.count
+        let budgetCount = budgets.count
+        
         transactions.removeAll()
         budgets.removeAll()
         UserDefaults.standard.removeObject(forKey: "vera_transactions")
         UserDefaults.standard.removeObject(forKey: "vera_budgets")
+        
+        print("   ✅ Cleared \(transactionCount) transactions and \(budgetCount) budgets")
     }
 }

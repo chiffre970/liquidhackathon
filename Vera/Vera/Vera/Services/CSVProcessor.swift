@@ -42,10 +42,19 @@ class CSVProcessor: ObservableObject {
     private let lfm2Service = LFM2Service.shared
     private let dataManager = DataManager.shared
     
+    init() {
+        // Don't load anything - files are not persistent
+    }
+    
     func importCSV(from url: URL) {
         Task {
             await importAndProcess(from: url)
         }
+    }
+    
+    // Clear imported files
+    func clearImportedFiles() {
+        importedFiles.removeAll()
     }
     
     @MainActor
@@ -81,6 +90,7 @@ class CSVProcessor: ObservableObject {
                 importDate: Date()
             )
             importedFiles.append(importedFile)
+            // Don't persist files - they're session-only
             
             processingStep = .complete
             processingProgress = 1.0

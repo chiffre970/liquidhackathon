@@ -20,9 +20,15 @@ struct VeraApp: App {
         // This might help with XnnpackBackend registration
         print("🚀 Initializing Vera app...")
         
-        // Don't clear transactions on startup - they should persist!
-        // DataManager.shared.clearAllTransactions()
+        #if DEBUG
+        // Clear all data during development/testing - nothing persists
+        print("🧹 DEBUG MODE: Clearing all stored data for fresh start...")
+        DataManager.shared.clearAllData()
+        print("✅ All data cleared for testing")
+        #else
+        // Production mode - preserve user data
         print("📊 Current stored transactions: \(DataManager.shared.transactions.count)")
+        #endif
         
         // Some frameworks require explicit initialization
         // Try to trigger any static initialization
