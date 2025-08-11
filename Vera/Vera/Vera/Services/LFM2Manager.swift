@@ -36,14 +36,14 @@ class LFM2Manager: ObservableObject {
     }
     
     func categorizeTransaction(_ text: String, context: [String] = []) async throws -> String {
-        await MainActor.run {
-            isProcessing = true
-            currentOperation = "Categorizing transaction"
+        DispatchQueue.main.async {
+            self.isProcessing = true
+            self.currentOperation = "Categorizing transaction"
         }
         defer {
-            Task { @MainActor in
-                isProcessing = false
-                currentOperation = ""
+            DispatchQueue.main.async {
+                self.isProcessing = false
+                self.currentOperation = ""
             }
         }
         
@@ -58,17 +58,17 @@ class LFM2Manager: ObservableObject {
         logger.info("Starting batch processing for \(transactions.count) transactions")
         let batchStart = logger.startTimer("Batch Transaction Processing")
         
-        await MainActor.run {
-            isProcessing = true
-            currentOperation = "Processing \(transactions.count) transactions"
-            processingProgress = 0.0
+        DispatchQueue.main.async {
+            self.isProcessing = true
+            self.currentOperation = "Processing \(transactions.count) transactions"
+            self.processingProgress = 0.0
         }
         
         defer {
-            Task { @MainActor in
-                isProcessing = false
-                currentOperation = ""
-                processingProgress = 0.0
+            DispatchQueue.main.async {
+                self.isProcessing = false
+                self.currentOperation = ""
+                self.processingProgress = 0.0
             }
         }
         
@@ -80,8 +80,8 @@ class LFM2Manager: ObservableObject {
             logger.debug("Processing transaction \(index + 1)/\(transactions.count)")
             
             // Update progress
-            await MainActor.run {
-                processingProgress = Double(index) / Double(transactions.count)
+            DispatchQueue.main.async {
+                self.processingProgress = Double(index) / Double(transactions.count)
             }
             
             do {
@@ -98,8 +98,8 @@ class LFM2Manager: ObservableObject {
             }
         }
         
-        await MainActor.run {
-            processingProgress = 1.0
+        DispatchQueue.main.async {
+            self.processingProgress = 1.0
         }
         
         logger.endTimer("Batch Transaction Processing", start: batchStart)
@@ -116,14 +116,14 @@ class LFM2Manager: ObservableObject {
     
     
     func analyzeSpending(_ transactions: [Transaction]) async throws -> CashFlowData {
-        await MainActor.run {
-            isProcessing = true
-            currentOperation = "Analyzing spending patterns"
+        DispatchQueue.main.async {
+            self.isProcessing = true
+            self.currentOperation = "Analyzing spending patterns"
         }
         defer {
-            Task { @MainActor in
-                isProcessing = false
-                currentOperation = ""
+            DispatchQueue.main.async {
+                self.isProcessing = false
+                self.currentOperation = ""
             }
         }
         
@@ -172,14 +172,14 @@ class LFM2Manager: ObservableObject {
     }
     
     func negotiateBudget(_ message: String, context: [ChatMessage]) async throws -> String {
-        await MainActor.run {
-            isProcessing = true
-            currentOperation = "Generating budget advice"
+        DispatchQueue.main.async {
+            self.isProcessing = true
+            self.currentOperation = "Generating budget advice"
         }
         defer {
-            Task { @MainActor in
-                isProcessing = false
-                currentOperation = ""
+            DispatchQueue.main.async {
+                self.isProcessing = false
+                self.currentOperation = ""
             }
         }
         

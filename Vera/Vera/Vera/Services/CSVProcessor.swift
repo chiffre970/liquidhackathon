@@ -217,9 +217,9 @@ class CSVProcessor: ObservableObject {
         print("   - Saved: \(transactions.count)")
         
         // Reset after delay
-        DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
-            self.processingStep = .idle
-            self.isProcessing = false
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2) { [weak self] in
+            self?.processingStep = .idle
+            self?.isProcessing = false
         }
         
         return transactions

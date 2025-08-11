@@ -96,7 +96,7 @@ struct BudgetChatView: View {
         Task {
             do {
                 let aiResponse = try await lfm2Manager.negotiateBudget(messageContent, context: messages)
-                await MainActor.run {
+                DispatchQueue.main.async {
                     messages.append(ChatMessage(
                         id: UUID(),
                         content: aiResponse,
@@ -106,7 +106,7 @@ struct BudgetChatView: View {
                     isProcessing = false
                 }
             } catch {
-                await MainActor.run {
+                DispatchQueue.main.async {
                     errorMessage = "Failed to generate response: \(error.localizedDescription)"
                     isProcessing = false
                 }
@@ -160,12 +160,12 @@ struct BudgetChatView: View {
                 // Parse the JSON response
                 let budget = try parseBudgetFromResponse(response)
                 
-                await MainActor.run {
+                DispatchQueue.main.async {
                     isProcessing = false
                     onFinalize(budget)
                 }
             } catch {
-                await MainActor.run {
+                DispatchQueue.main.async {
                     isProcessing = false
                     errorMessage = "Failed to generate budget: \(error.localizedDescription)"
                     

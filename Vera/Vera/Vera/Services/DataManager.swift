@@ -40,8 +40,8 @@ class DataManager: ObservableObject {
     }
     
     func importTransactions(_ newTransactions: [Transaction]) async {
-        await MainActor.run {
-            isLoading = true
+        DispatchQueue.main.async {
+            self.isLoading = true
         }
         
         for transaction in newTransactions {
@@ -62,19 +62,18 @@ class DataManager: ObservableObject {
             }
         }
         
-        await MainActor.run {
-            saveToUserDefaults()
-            isLoading = false
+        DispatchQueue.main.async {
+            self.saveToUserDefaults()
+            self.isLoading = false
         }
     }
     
+    @MainActor
     func saveTransactions(_ newTransactions: [Transaction]) async throws {
         print("💾 DataManager: Attempting to save \(newTransactions.count) new transactions")
         print("💾 DataManager: Current transaction count before save: \(transactions.count)")
         
-        await MainActor.run {
-            isLoading = true
-        }
+        isLoading = true
         
         var savedCount = 0
         var duplicateCount = 0
@@ -101,13 +100,11 @@ class DataManager: ObservableObject {
         print("💾 DataManager: Save results - Saved: \(savedCount), Duplicates: \(duplicateCount)")
         print("💾 DataManager: Total transaction count after save: \(transactions.count)")
         
-        await MainActor.run {
-            // Sort transactions by date
-            transactions.sort { $0.date > $1.date }
-            saveToUserDefaults()
-            print("💾 DataManager: Persisted to UserDefaults")
-            isLoading = false
-        }
+        // Sort transactions by date
+        transactions.sort { $0.date > $1.date }
+        saveToUserDefaults()
+        print("💾 DataManager: Persisted to UserDefaults")
+        isLoading = false
     }
     
     func fetchTransactions(for month: Date) -> [Transaction] {

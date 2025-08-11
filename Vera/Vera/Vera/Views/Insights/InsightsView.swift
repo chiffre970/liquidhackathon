@@ -71,6 +71,7 @@ struct InsightsView: View {
         }
     }
     
+    @MainActor
     private func analyzeTransactions() {
         isAnalyzing = true
         
@@ -91,12 +92,12 @@ struct InsightsView: View {
                 // Use LFM2Manager to analyze spending with real AI
                 let cashFlowData = try await lfm2Manager.analyzeSpending(transactions)
                 
-                await MainActor.run {
+                DispatchQueue.main.async {
                     self.cashFlow = cashFlowData
                     self.isAnalyzing = false
                 }
             } catch {
-                await MainActor.run {
+                DispatchQueue.main.async {
                     self.isAnalyzing = false
                     // Handle error - could show an alert or error state
                     print("Failed to analyze transactions: \(error)")
