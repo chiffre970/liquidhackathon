@@ -192,42 +192,9 @@ class LFM2Service {
     
     // MARK: - Specialized Inference Methods
     
-    func parseCSV(_ csvContent: String) async throws -> [[String: Any]] {
-        logger.info("Parsing CSV content with LFM2")
-        
-        let prompt = promptManager.fillTemplate(
-            type: .transactionParser,
-            variables: [
-                "csv_content": csvContent,
-                "categories": loadCategories()
-            ]
-        )
-        
-        let result = try await inference(prompt, type: "CSVParser")
-        
-        // Debug: Log raw LFM2 output
-        logger.info("Raw LFM2 output (\(result.count) chars): \(result.prefix(500))")
-        print("🔍 Raw LFM2 response preview: \(result.prefix(200))...")
-        
-        return try parseJSONResponse(result)
-    }
-    
-    func deduplicateTransactions(_ transactions: [[String: Any]]) async throws -> [[String: Any]] {
-        logger.info("Deduplicating \(transactions.count) transactions with LFM2")
-        
-        let transactionsJSON = try JSONSerialization.data(withJSONObject: transactions)
-        let transactionsString = String(data: transactionsJSON, encoding: .utf8) ?? "[]"
-        
-        let prompt = promptManager.fillTemplate(
-            type: .transactionDeduplicator,
-            variables: ["transactions_json": transactionsString]
-        )
-        
-        let result = try await inference(prompt, type: "Deduplicator")
-        return try parseJSONResponse(result)
-    }
-    
     func categorizeTransaction(_ text: String, context: [String] = []) async throws -> String {
+        print("🤖 LFM2 Categorizing: '\(text)'")
+        
         let prompt = promptManager.fillTemplate(
             type: .categoryClassifier,
             variables: [
@@ -237,11 +204,18 @@ class LFM2Service {
             ]
         )
         
+        print("📝 Generated prompt for categorization (first 200 chars): \(String(prompt.prefix(200)))")
+        
         let result = try await inference(prompt, type: "CategoryClassifier")
+        
+        print("🤖 LFM2 Raw response: \(result)")
         
         // Parse and validate the category from response
         let category = extractCategory(from: result)
+        print("🏷️ Extracted category: '\(category)'")
+        
         guard !category.isEmpty else {
+            print("⚠️ Failed to extract category from response")
             throw LFM2Error.invalidResponse("Could not extract category from LFM2 response")
         }
         
@@ -352,6 +326,8 @@ class LFM2Service {
     }
     
     private func extractCategory(from response: String) -> String {
+        print("🔍 Extracting category from response: \(response)")
+        
         // Categories we expect from the model
         let validCategories = ["Housing", "Food", "Transportation", "Healthcare", 
                               "Entertainment", "Shopping", "Savings", "Utilities", 
@@ -360,6 +336,7 @@ class LFM2Service {
         // Try to find a valid category in the response
         for category in validCategories {
             if response.contains(category) {
+                print("   ✅ Found valid category: \(category)")
                 return category
             }
         }

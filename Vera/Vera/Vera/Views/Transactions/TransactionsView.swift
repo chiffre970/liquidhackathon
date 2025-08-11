@@ -58,19 +58,32 @@ struct TransactionsView: View {
             }
         }
         .onAppear {
+            print("🔄 TransactionsView appeared, loading transactions...")
             loadTransactions()
         }
-        .onChange(of: csvProcessor.parsedTransactions) { _, _ in
+        .onChange(of: csvProcessor.parsedTransactions) { _, newValue in
+            print("🔄 CSV Processor parsed transactions changed: \(newValue.count) transactions")
             loadTransactions()
         }
-        .onChange(of: dataManager.transactions) { _, _ in
+        .onChange(of: dataManager.transactions) { _, newValue in
+            print("🔄 DataManager transactions changed: \(newValue.count) transactions")
             loadTransactions()
         }
     }
     
     private func loadTransactions() {
         // Load transactions from DataManager (includes all saved transactions)
-        transactions = dataManager.transactions.sorted { $0.date > $1.date }
+        let allTransactions = dataManager.transactions
+        print("📦 TransactionsView: Loading transactions from DataManager")
+        print("   - Total in DataManager: \(allTransactions.count)")
+        
+        transactions = allTransactions.sorted { $0.date > $1.date }
+        print("   - After sorting: \(transactions.count)")
+        
+        // Log first few transactions for debugging
+        for (index, transaction) in transactions.prefix(3).enumerated() {
+            print("   - Transaction \(index + 1): \(transaction.description) - $\(transaction.amount) - \(transaction.category ?? "uncategorized")")
+        }
     }
 }
 

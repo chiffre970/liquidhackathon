@@ -20,6 +20,10 @@ struct VeraApp: App {
         // This might help with XnnpackBackend registration
         print("🚀 Initializing Vera app...")
         
+        // Don't clear transactions on startup - they should persist!
+        // DataManager.shared.clearAllTransactions()
+        print("📊 Current stored transactions: \(DataManager.shared.transactions.count)")
+        
         // Some frameworks require explicit initialization
         // Try to trigger any static initialization
         _ = LeapSDK.Leap.self
