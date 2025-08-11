@@ -227,6 +227,31 @@ class CSVProcessor: ObservableObject {
         print("   - After deduplication: \(uniqueTransactions.count)")
         print("   - Saved: \(transactions.count)")
         
+        // Print detailed comparison table
+        print("\n📊 DETAILED TRANSACTION CATEGORIZATION LOG:")
+        print(String(repeating: "=", count: 120))
+        print(String(format: "%-40s | %-20s | %-20s | %-10s | %-8s", 
+                     "Merchant", "Original CSV", "Final Category", "Amount", "Type"))
+        print(String(repeating: "=", count: 120))
+        
+        for transaction in transactions {
+            // Extract original category from the ExtractedTransaction if available
+            let originalCat = "[check logs above]" // We need to pass this through from ExtractedTransaction
+            let finalCat = transaction.category ?? "Other"
+            let amountStr = String(format: "$%.2f", abs(transaction.amount))
+            let typeStr = transaction.amount < 0 ? "Expense" : "Income"
+            let merchantName = String(transaction.description.prefix(40))
+            
+            print(String(format: "%-40s | %-20s | %-20s | %-10s | %-8s",
+                         merchantName,
+                         originalCat,
+                         String(finalCat.prefix(20)),
+                         amountStr,
+                         typeStr))
+        }
+        print(String(repeating: "=", count: 120))
+        print("\n")
+        
         DispatchQueue.main.asyncAfter(deadline: .now() + 2) { [weak self] in
             self?.processingStep = .idle
             self?.isProcessing = false
@@ -402,6 +427,7 @@ class CSVProcessor: ObservableObject {
         let merchant: String
         let amount: Double
         var category: String?
+        var originalCategory: String? // Track original CSV category for comparison
     }
     
     private func extractData(from lines: [String], using mapping: ColumnMapping, headers: [String]) -> [ExtractedTransaction] {
@@ -470,9 +496,13 @@ class CSVProcessor: ObservableObject {
                 date: validDate,
                 merchant: validMerchant,
                 amount: amount,
-                category: category
+                category: category,
+                originalCategory: category // Store original for comparison
             )
             transactions.append(transaction)
+            
+            // Log extracted transaction
+            print("📝 Row \(i): Date=\(validDate), Merchant=\(validMerchant), Amount=$\(String(format: "%.2f", amount)), CSV Category=\(category ?? "[none]")")
         }
         
         return transactions
@@ -518,22 +548,37 @@ class CSVProcessor: ObservableObject {
             return (transactions, [:])
         }
         
-        print("📊 Found \(csvCategories.count) unique categories in CSV")
+        print("📊 Found \(csvCategories.count) unique categories in CSV:")
+        for cat in csvCategories.sorted() {
+            print("   - \(cat)")
+        }
         
         // Map to standard categories
         let categoryMapping = try await mapToStandardCategories(csvCategories: Array(csvCategories))
         
+        // Log the mapping
+        print("\n🔄 Category Mapping Results:")
+        for (csvCat, standardCat) in categoryMapping.sorted(by: { $0.key < $1.key }) {
+            print("   '\(csvCat)' → '\(standardCat)'")
+        }
+        
         // Apply mapping to transactions
         var mappedTransactions: [ExtractedTransaction] = []
-        for transaction in transactions {
+        print("\n📋 Applying category mapping to transactions:")
+        for (index, transaction) in transactions.enumerated() {
             var updated = transaction
+            updated.originalCategory = transaction.originalCategory // Preserve original
             if let csvCategory = transaction.category,
                let standardCategory = categoryMapping[csvCategory] {
                 updated.category = standardCategory
+                print("   Transaction \(index + 1): '\(csvCategory)' → '\(standardCategory)' [\(transaction.merchant)]")
+            } else if transaction.category != nil {
+                print("   Transaction \(index + 1): '\(transaction.category!)' → [no mapping found] [\(transaction.merchant)]")
             }
             mappedTransactions.append(updated)
         }
         
+        print("\n📊 Category Standardization Complete")
         return (mappedTransactions, categoryMapping)
     }
     
@@ -553,12 +598,29 @@ class CSVProcessor: ObservableObject {
         Use exact spelling from standard categories. When unsure, use "Other".
         """
         
+        print("\n🔄 Requesting category mapping from AI...")
+        print("   CSV categories to map: \(csvCategories)")
+        
         let response = try await lfm2Service.inference(prompt, type: "CategoryMapper")
+        
+        print("\n🤖 AI Category Mapping Response:")
+        print("   Raw response: \(response)")
         
         guard let jsonData = extractJSON(from: response),
               let mapping = try? JSONSerialization.jsonObject(with: jsonData) as? [String: String] else {
+            print("   ⚠️ Failed to parse mapping response, using heuristic fallback")
             // Fallback to heuristic mapping
-            return heuristicCategoryMapping(csvCategories: csvCategories)
+            let heuristicMap = heuristicCategoryMapping(csvCategories: csvCategories)
+            print("   📋 Heuristic mapping:")
+            for (csv, standard) in heuristicMap {
+                print("      '\(csv)' → '\(standard)'")
+            }
+            return heuristicMap
+        }
+        
+        print("   ✅ Successfully parsed mapping:")
+        for (csv, standard) in mapping {
+            print("      '\(csv)' → '\(standard)'")
         }
         
         print("✅ Mapped \(mapping.count) categories to standards")
@@ -604,7 +666,8 @@ class CSVProcessor: ObservableObject {
             return transactions
         }
         
-        print("🤖 Categorizing \(uncategorized.count) transactions...")
+        print("\n🤖 AI Categorization Phase:")
+        print("   Found \(uncategorized.count) transactions without categories")
         
         var result = transactions
         let batchSize = 10
@@ -628,7 +691,9 @@ class CSVProcessor: ObservableObject {
             
             // Apply cached categories
             for (idx, category) in cached {
+                let transaction = result[idx]
                 result[idx].category = category
+                print("   💾 Cache hit: '\(transaction.merchant)' → '\(category)'")
             }
             
             // Process uncached with AI
@@ -639,11 +704,43 @@ class CSVProcessor: ObservableObject {
                     result[idx].category = category
                     // Update cache
                     merchantCategoryCache[transaction.merchant] = category
+                    print("   🤖 AI categorized: '\(transaction.merchant)' (\(transaction.amount < 0 ? "expense" : "income")) → '\(category)'")
                 }
             }
             
             processingProgress = 0.5 + (0.2 * Double(i + batch.count) / Double(uncategorized.count))
         }
+        
+        // Final summary
+        print("\n\n=== CATEGORIZATION SUMMARY ===")
+        print("Total transactions: \(result.count)")
+        
+        // Group by category and show counts
+        var categoryCounts: [String: Int] = [:]
+        for transaction in result {
+            let cat = transaction.category ?? "Other"
+            categoryCounts[cat, default: 0] += 1
+        }
+        
+        print("\nCategory Distribution:")
+        for (category, count) in categoryCounts.sorted(by: { $0.key < $1.key }) {
+            print("   \(category): \(count) transactions")
+        }
+        
+        // Show sample transactions per category
+        print("\n📝 Sample Transactions by Category:")
+        for category in categoryCounts.keys.sorted() {
+            let samples = result.filter { $0.category == category }.prefix(3)
+            if !samples.isEmpty {
+                print("\n   \(category):")
+                for transaction in samples {
+                    let originalCat = transaction.originalCategory ?? "[no CSV category]"
+                    print("      • \(transaction.merchant) ($\(String(format: "%.2f", abs(transaction.amount)))) - Original: \(originalCat)")
+                }
+            }
+        }
+        
+        print("\n=== END CATEGORIZATION SUMMARY ===\n")
         
         return result
     }
@@ -667,17 +764,35 @@ class CSVProcessor: ObservableObject {
         Use exact category names from the standard list.
         """
         
+        print("\n🔍 Batch categorization request:")
+        print("   Transactions to categorize:")
+        for (i, t) in transactions.enumerated() {
+            print("   \(i+1). \(t.merchant) ($\(String(format: "%.2f", abs(t.amount))) \(t.amount < 0 ? "expense" : "income"))")
+        }
+        
         let response = try await lfm2Service.inference(prompt, type: "BatchCategorizer")
+        
+        print("\n🤖 AI Response for batch:")
+        print("   Raw response: \(response)")
         
         guard let jsonData = extractJSON(from: response),
               let categories = try? JSONSerialization.jsonObject(with: jsonData) as? [String] else {
+            print("   ⚠️ Failed to parse batch response, falling back to individual categorization")
             // Fallback to individual categorization
             var categories: [String] = []
             for transaction in transactions {
                 let category = try await lfm2Service.categorizeTransaction(transaction.merchant)
                 categories.append(category)
+                print("   Individual: \(transaction.merchant) → \(category)")
             }
             return categories
+        }
+        
+        print("   ✅ Parsed categories: \(categories)")
+        for (i, cat) in categories.enumerated() {
+            if i < transactions.count {
+                print("   \(i+1). \(transactions[i].merchant) → \(cat)")
+            }
         }
         
         // Ensure we have the right number of categories

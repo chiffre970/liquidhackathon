@@ -14,7 +14,6 @@ Package.resolved
 
 # LFM2 Models
 *.bundle
-models/
 *.pte
 
 # User data
