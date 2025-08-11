@@ -140,26 +140,67 @@ class CSVProcessor: ObservableObject {
             let parsedData = try await parseCSVWithLFM2(content)
             allParsedData.append(contentsOf: parsedData)
             
-            processingProgress = 0.3 * Double(index + 1) / Double(importedFiles.count)
+            processingProgress = 0.25 * Double(index + 1) / Double(importedFiles.count)
             processingMessage = "Parsed \(file.name): \(parsedData.count) transactions"
             print("✅ Parsed \(file.name): \(parsedData.count) transactions")
         }
         
         print("✅ Total parsed: \(allParsedData.count) transactions from \(importedFiles.count) files")
         
-        // Step 2: Categorize transactions that don't have categories yet
+        // Step 2: Extract unique categories from CSV and map to standard categories
         processingStep = .categorizing
+        processingMessage = "Mapping categories..."
+        processingProgress = 0.25
+        
+        // Extract unique CSV categories
+        var csvCategories = Set<String>()
+        for transaction in allParsedData {
+            if let category = transaction["category"] as? String, !category.isEmpty {
+                csvCategories.insert(category)
+            }
+        }
+        
+        var categoryMapping: [String: String] = [:]
+        if !csvCategories.isEmpty {
+            print("📊 Found \(csvCategories.count) unique categories in CSV")
+            print("🗂️ CSV Categories: \(csvCategories.sorted().joined(separator: ", "))")
+            
+            // Map CSV categories to standard categories using LFM2
+            processingMessage = "Mapping \(csvCategories.count) categories to standard categories..."
+            categoryMapping = try await mapCategoriesToStandard(csvCategories: Array(csvCategories))
+            
+            print("✅ Category mapping complete:")
+            print("📋 Full mapping dictionary:")
+            for (csvCat, standardCat) in categoryMapping.sorted(by: { $0.key < $1.key }) {
+                print("   '\(csvCat)' → '\(standardCat)'")
+            }
+        }
+        
+        // Step 3: Apply category mapping and categorize transactions without categories
         processingMessage = "Categorizing transactions..."
-        processingProgress = 0.3
+        processingProgress = 0.4
         
         var categorizedData: [[String: Any]] = []
         for (index, transaction) in allParsedData.enumerated() {
             var mutableTransaction = transaction
             
             // Check if category already exists from CSV
-            let existingCategory = transaction["category"] as? String
-            
-            if existingCategory == nil || existingCategory!.isEmpty {
+            if let existingCategory = transaction["category"] as? String, !existingCategory.isEmpty {
+                // Map to standard category
+                print("🔍 Transaction \(index + 1): Has CSV category '\(existingCategory)'")
+                print("   Checking mapping dictionary for key '\(existingCategory)'...")
+                print("   Mapping dictionary has keys: \(categoryMapping.keys.sorted())")
+                
+                if let standardCategory = categoryMapping[existingCategory] {
+                    mutableTransaction["category"] = standardCategory
+                    print("   ✅ Found mapping: '\(existingCategory)' → '\(standardCategory)'")
+                } else {
+                    // Fallback to heuristic mapping for unmapped categories
+                    let heuristicCategory = mapSingleCategory(existingCategory)
+                    mutableTransaction["category"] = heuristicCategory
+                    print("   ⚠️ No mapping found, using heuristic: '\(existingCategory)' → '\(heuristicCategory)'")
+                }
+            } else {
                 // Need to categorize using LFM2
                 let description = transaction["description"] as? String ?? ""
                 let merchant = transaction["counterparty"] as? String ?? description
@@ -174,12 +215,10 @@ class CSVProcessor: ObservableObject {
                     mutableTransaction["category"] = "Other"
                     print("   → Category: Other (no merchant/description found)")
                 }
-            } else {
-                print("✅ Transaction \(index + 1) already has category from CSV: \(existingCategory!)")
             }
             
             categorizedData.append(mutableTransaction)
-            processingProgress = 0.3 + (0.3 * Double(index + 1) / Double(allParsedData.count))
+            processingProgress = 0.4 + (0.3 * Double(index + 1) / Double(allParsedData.count))
         }
         
         print("✅ Categorized: \(categorizedData.count) transactions")
@@ -449,6 +488,150 @@ class CSVProcessor: ObservableObject {
         print("📊 Heuristic mapping: date=\(mapping.dateColumn ?? -1), amount=\(mapping.amountColumn ?? -1), debit=\(mapping.debitColumn ?? -1), credit=\(mapping.creditColumn ?? -1), merchant=\(mapping.merchantColumn ?? -1)")
         
         return mapping
+    }
+    
+    // Map CSV categories to standard Vera categories
+    private func mapCategoriesToStandard(csvCategories: [String]) async throws -> [String: String] {
+        let standardCategories = [
+            "Housing", "Food & Dining", "Transportation", "Healthcare",
+            "Entertainment", "Shopping", "Utilities", "Education", 
+            "Insurance", "Savings", "Investment", "Travel",
+            "Personal Care", "Gifts & Donations", "Business Services",
+            "Fees & Charges", "Income", "Other"
+        ]
+        
+        // Build a simpler prompt format that's more likely to work
+        var categoryList = ""
+        for category in csvCategories {
+            categoryList += "\"\(category)\": \"?\",\n"
+        }
+        categoryList = String(categoryList.dropLast(2)) // Remove last comma and newline
+        
+        let prompt = """
+        Map each CSV category to the most appropriate standard category.
+        
+        Standard categories: Housing, Food & Dining, Transportation, Healthcare, Entertainment, Shopping, Utilities, Education, Insurance, Savings, Investment, Travel, Personal Care, Gifts & Donations, Business Services, Fees & Charges, Income, Other
+        
+        Complete this JSON by replacing ? with the best matching standard category:
+        {
+        \(categoryList)
+        }
+        
+        Use exact spelling from standard categories. When unsure, use "Other".
+        """
+        
+        print("🤖 Using LFM2 to map \(csvCategories.count) categories to standard categories...")
+        print("📝 Prompt being sent:")
+        print(prompt)
+        print("---")
+        
+        let response = try await lfm2Service.inference(prompt, type: "CategoryMapper")
+        print("🤖 LFM2 raw response:")
+        print(response)
+        print("---")
+        
+        var mapping: [String: String] = [:]
+        
+        // Try to extract JSON from response
+        if let jsonStart = response.range(of: "{"),
+           let jsonEnd = response.range(of: "}", options: .backwards) {
+            let jsonString = String(response[jsonStart.lowerBound...jsonEnd.upperBound])
+            print("📝 Extracted JSON string:")
+            print(jsonString)
+            print("---")
+            
+            if let data = jsonString.data(using: .utf8) {
+                do {
+                    if let json = try JSONSerialization.jsonObject(with: data) as? [String: String] {
+                        mapping = json
+                        print("✅ Successfully parsed category mapping:")
+                        for (key, value) in mapping {
+                            print("   '\(key)' → '\(value)'")
+                        }
+                    } else {
+                        print("⚠️ JSON parsed but not as [String: String]")
+                        if let json = try JSONSerialization.jsonObject(with: data) as? [String: Any] {
+                            print("   Parsed as [String: Any]: \(json)")
+                        }
+                        print("   Using heuristic mapping instead")
+                        mapping = heuristicCategoryMapping(csvCategories: csvCategories)
+                    }
+                } catch {
+                    print("⚠️ JSON parsing error: \(error)")
+                    print("   Using heuristic mapping instead")
+                    mapping = heuristicCategoryMapping(csvCategories: csvCategories)
+                }
+            }
+        } else {
+            print("⚠️ No JSON found in response, using heuristic mapping")
+            mapping = heuristicCategoryMapping(csvCategories: csvCategories)
+        }
+        
+        // Validate that all CSV categories have mappings
+        for category in csvCategories {
+            if mapping[category] == nil {
+                print("⚠️ Missing mapping for '\(category)', using heuristic")
+                mapping[category] = mapSingleCategory(category)
+            }
+        }
+        
+        return mapping
+    }
+    
+    // Heuristic mapping for common category names
+    private func heuristicCategoryMapping(csvCategories: [String]) -> [String: String] {
+        var mapping: [String: String] = [:]
+        
+        for category in csvCategories {
+            mapping[category] = mapSingleCategory(category)
+        }
+        
+        print("📊 Heuristic mapping result: \(mapping)")
+        return mapping
+    }
+    
+    // Map a single category using heuristics
+    private func mapSingleCategory(_ category: String) -> String {
+        let lowercased = category.lowercased()
+        
+        // Direct matches or very close matches
+        if lowercased.contains("income") || lowercased.contains("salary") || lowercased.contains("interest") {
+            return "Income"
+        } else if lowercased.contains("food") || lowercased.contains("dining") || lowercased.contains("restaurant") || lowercased.contains("groceries") {
+            return "Food & Dining"
+        } else if lowercased.contains("transport") || lowercased.contains("fuel") || lowercased.contains("parking") || lowercased.contains("toll") {
+            return "Transportation"
+        } else if lowercased.contains("health") || lowercased.contains("medical") || lowercased.contains("doctor") || lowercased.contains("dentist") || lowercased.contains("pharmacy") {
+            return "Healthcare"
+        } else if lowercased.contains("entertainment") || lowercased.contains("leisure") || lowercased.contains("music") || lowercased.contains("dance") || lowercased.contains("sport") || lowercased.contains("fitness") {
+            return "Entertainment"
+        } else if lowercased.contains("shopping") || lowercased.contains("retail") || lowercased.contains("clothing") {
+            return "Shopping"
+        } else if lowercased.contains("utilities") || lowercased.contains("electric") || lowercased.contains("gas") || lowercased.contains("water") {
+            return "Utilities"
+        } else if lowercased.contains("education") || lowercased.contains("school") || lowercased.contains("university") || lowercased.contains("stationery") {
+            return "Education"
+        } else if lowercased.contains("insurance") {
+            return "Insurance"
+        } else if lowercased.contains("savings") || lowercased.contains("deposit") {
+            return "Savings"
+        } else if lowercased.contains("investment") || lowercased.contains("stocks") || lowercased.contains("crypto") {
+            return "Investment"
+        } else if lowercased.contains("travel") || lowercased.contains("vacation") || lowercased.contains("hotel") {
+            return "Travel"
+        } else if lowercased.contains("personal") || lowercased.contains("beauty") || lowercased.contains("haircut") {
+            return "Personal Care"
+        } else if lowercased.contains("gift") || lowercased.contains("donation") || lowercased.contains("charity") {
+            return "Gifts & Donations"
+        } else if lowercased.contains("business") || lowercased.contains("service") {
+            return "Business Services"
+        } else if lowercased.contains("fee") || lowercased.contains("charge") || lowercased.contains("financial") || lowercased.contains("transfer") || lowercased.contains("bank") {
+            return "Fees & Charges"
+        } else if lowercased.contains("housing") || lowercased.contains("rent") || lowercased.contains("mortgage") {
+            return "Housing"
+        } else {
+            return "Other"
+        }
     }
     
     private func parseDate(_ value: String) -> String {
