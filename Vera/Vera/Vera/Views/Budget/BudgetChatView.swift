@@ -3,9 +3,9 @@ import SwiftUI
 struct BudgetChatView: View {
     @Binding var messages: [ChatMessage]
     @Binding var inputText: String
+    @EnvironmentObject var csvProcessor: CSVProcessor
     let onFinalize: (Budget) -> Void
     @FocusState private var isTextFieldFocused: Bool
-    @StateObject private var lfm2Manager = LFM2Manager.shared
     @State private var isProcessing = false
     @State private var errorMessage: String?
     
@@ -35,7 +35,7 @@ struct BudgetChatView: View {
             }
             
             HStack(spacing: 12) {
-                TextField("Help me create a monthly budget...", text: $inputText)
+                TextField("Set budget targets for your categories...", text: $inputText)
                     .font(.veraBodySmall())
                     .padding(12)
                     .background(Color.veraWhite)
@@ -68,7 +68,7 @@ struct BudgetChatView: View {
                     .padding(.top, 8)
             }
             
-            if messages.count > 3 {
+            if messages.count > 2 {
                 VButton(title: "Finalize Budget", style: .primary, isFullWidth: true) {
                     createBudget()
                 }
@@ -90,151 +90,152 @@ struct BudgetChatView: View {
         messages.append(userMessage)
         let messageContent = inputText
         inputText = ""
-        isProcessing = true
-        errorMessage = nil
         
-        Task {
-            do {
-                let aiResponse = try await lfm2Manager.negotiateBudget(messageContent, context: messages)
-                DispatchQueue.main.async {
-                    messages.append(ChatMessage(
-                        id: UUID(),
-                        content: aiResponse,
-                        isUser: false,
-                        timestamp: Date()
-                    ))
-                    isProcessing = false
-                }
-            } catch {
-                DispatchQueue.main.async {
-                    errorMessage = "Failed to generate response: \(error.localizedDescription)"
-                    isProcessing = false
-                }
-            }
-        }
+        // Generate a simple response based on CSV categories
+        let response = generateBudgetResponse(for: messageContent)
+        
+        messages.append(ChatMessage(
+            id: UUID(),
+            content: response,
+            isUser: false,
+            timestamp: Date()
+        ))
     }
     
+    private func generateBudgetResponse(for message: String) -> String {
+        let categories = csvProcessor.uniqueCategories.sorted()
+        let categoryTotals = csvProcessor.categoryTotals
+        
+        if categories.isEmpty {
+            return "Please upload and analyze your CSV files first to see your spending categories."
+        }
+        
+        // Simple response generation based on message content
+        let messageLower = message.lowercased()
+        
+        if messageLower.contains("categor") || messageLower.contains("what") || messageLower.contains("show") {
+            var response = "Based on your CSV data, you have the following categories:\n\n"
+            for category in categories {
+                let amount = categoryTotals[category] ?? 0
+                response += "• \(category): $\(String(format: "%.2f", abs(amount)))\n"
+            }
+            response += "\nWould you like to set budget targets for these categories?"
+            return response
+        }
+        
+        if messageLower.contains("recommend") || messageLower.contains("suggest") {
+            var response = "Based on your current spending patterns, here are suggested budget targets:\n\n"
+            for category in categories {
+                let currentAmount = abs(categoryTotals[category] ?? 0)
+                let suggested = currentAmount * 0.9 // Suggest 10% reduction
+                response += "• \(category): $\(String(format: "%.2f", suggested)) (currently $\(String(format: "%.2f", currentAmount)))\n"
+            }
+            response += "\nThese targets aim for a 10% reduction in spending."
+            return response
+        }
+        
+        if messageLower.contains("save") || messageLower.contains("saving") {
+            let totalExpenses = categoryTotals.values.filter { $0 < 0 }.reduce(0) { $0 + abs($1) }
+            let suggestedSavings = totalExpenses * 0.2
+            return """
+            To build healthy savings, I recommend targeting 20% of your expenses.
+            
+            Based on your total expenses of $\(String(format: "%.2f", totalExpenses)), you should aim to save $\(String(format: "%.2f", suggestedSavings)) per month.
+            
+            You can achieve this by reducing spending across your categories proportionally.
+            """
+        }
+        
+        // Default response
+        return """
+        I can help you create a budget based on your \(categories.count) spending categories.
+        
+        You can:
+        • Review your current spending by category
+        • Get recommended budget targets
+        • Set custom limits for each category
+        
+        What would you like to focus on?
+        """
+    }
     
     private func createBudget() {
         isProcessing = true
         errorMessage = nil
         
-        Task {
-            do {
-                // Create a summary prompt for budget generation
-                let chatSummary = messages.map { msg in
-                    "\(msg.isUser ? "User" : "Assistant"): \(msg.content)"
-                }.joined(separator: "\n")
-                
-                // Get current spending data from DataManager
-                let currentMonth = Date()
-                let transactions = DataManager.shared.fetchTransactions(for: currentMonth)
-                
-                // Calculate spending by category
-                var categorySpending: [String: Double] = [:]
-                for transaction in transactions where transaction.amount < 0 {
-                    let category = transaction.category ?? "Other"
-                    categorySpending[category, default: 0] += abs(transaction.amount)
-                }
-                
-                // Use LFM2 to generate a budget based on the chat context
-                let budgetPrompt = """
-                Based on the following budget negotiation chat and current spending patterns, generate a monthly budget.
-                
-                Chat History:
-                \(chatSummary)
-                
-                Current Monthly Spending:
-                \(categorySpending.map { "\($0.key): $\(String(format: "%.2f", $0.value))" }.joined(separator: "\n"))
-                
-                Generate a JSON budget with:
-                - monthlyTarget: total monthly budget amount
-                - categories: array of {name, amount, percentage}
-                - changes: array of recommended changes from current spending
-                
-                Return ONLY valid JSON.
-                """
-                
-                let response = try await LFM2Service.shared.inference(budgetPrompt, type: "BudgetGenerator")
-                
-                // Parse the JSON response
-                let budget = try parseBudgetFromResponse(response)
-                
-                DispatchQueue.main.async {
-                    isProcessing = false
-                    onFinalize(budget)
-                }
-            } catch {
-                DispatchQueue.main.async {
-                    isProcessing = false
-                    errorMessage = "Failed to generate budget: \(error.localizedDescription)"
-                    
-                    // Fallback to a default budget if generation fails
-                    let defaultBudget = Budget(
-                        id: UUID(),
-                        monthlyTarget: 5000,
-                        categories: [
-                            Budget.CategoryAllocation(name: "Housing", amount: 1500, percentage: 30),
-                            Budget.CategoryAllocation(name: "Food & Dining", amount: 600, percentage: 12),
-                            Budget.CategoryAllocation(name: "Transportation", amount: 400, percentage: 8),
-                            Budget.CategoryAllocation(name: "Utilities", amount: 200, percentage: 4),
-                            Budget.CategoryAllocation(name: "Shopping", amount: 300, percentage: 6),
-                            Budget.CategoryAllocation(name: "Healthcare", amount: 250, percentage: 5),
-                            Budget.CategoryAllocation(name: "Entertainment", amount: 250, percentage: 5),
-                            Budget.CategoryAllocation(name: "Savings", amount: 1500, percentage: 30)
-                        ],
-                        changes: ["Budget generated from default template due to processing error"],
-                        createdDate: Date()
-                    )
-                    onFinalize(defaultBudget)
-                }
-            }
-        }
-    }
-    
-    private func parseBudgetFromResponse(_ response: String) throws -> Budget {
-        // Extract JSON from response
-        var jsonString = response
-        if let startIndex = response.firstIndex(of: "{"),
-           let endIndex = response.lastIndex(of: "}") {
-            jsonString = String(response[startIndex...endIndex])
+        // Get current spending data from CSV processor
+        let categories = csvProcessor.uniqueCategories.sorted()
+        let categoryTotals = csvProcessor.categoryTotals
+        
+        if categories.isEmpty {
+            errorMessage = "No categories found. Please upload CSV files first."
+            isProcessing = false
+            return
         }
         
-        guard let data = jsonString.data(using: .utf8) else {
-            throw NSError(domain: "BudgetParsing", code: 1, userInfo: [NSLocalizedDescriptionKey: "Invalid response format"])
+        // Calculate total spending
+        let totalExpenses = categoryTotals.values.filter { $0 < 0 }.reduce(0) { $0 + abs($1) }
+        let totalIncome = categoryTotals.values.filter { $0 > 0 }.reduce(0) { $0 + $1 }
+        
+        // Create budget allocations based on actual categories
+        var budgetCategories: [Budget.CategoryAllocation] = []
+        
+        for category in categories {
+            let amount = abs(categoryTotals[category] ?? 0)
+            let percentage = totalExpenses > 0 ? (amount / totalExpenses) * 100 : 0
+            
+            // Apply slight reduction for budget targets (encourage saving)
+            let targetAmount = amount * 0.95
+            
+            budgetCategories.append(Budget.CategoryAllocation(
+                name: category,
+                amount: targetAmount,
+                percentage: percentage
+            ))
         }
         
-        let json = try JSONSerialization.jsonObject(with: data) as? [String: Any] ?? [:]
-        
-        let monthlyTarget = json["monthlyTarget"] as? Double ?? 5000
-        let categoriesArray = json["categories"] as? [[String: Any]] ?? []
-        let changes = json["changes"] as? [String] ?? []
-        
-        let categories = categoriesArray.map { cat in
-            Budget.CategoryAllocation(
-                name: cat["name"] as? String ?? "Unknown",
-                amount: cat["amount"] as? Double ?? 0,
-                percentage: Double(cat["percentage"] as? Int ?? 0)
-            )
+        // Add savings category if not present
+        if !categories.contains("Savings") && !categories.contains("savings") {
+            let savingsAmount = totalExpenses * 0.1 // Target 10% savings
+            budgetCategories.append(Budget.CategoryAllocation(
+                name: "Savings",
+                amount: savingsAmount,
+                percentage: 10
+            ))
         }
         
-        return Budget(
+        // Sort by amount
+        budgetCategories.sort { $0.amount > $1.amount }
+        
+        // Generate changes/recommendations
+        var changes: [String] = []
+        
+        // Find categories with highest spending
+        if let topCategory = budgetCategories.first {
+            changes.append("Consider reducing \(topCategory.name) spending by 5-10%")
+        }
+        
+        // Add general recommendations
+        if totalIncome > totalExpenses {
+            let surplus = totalIncome - totalExpenses
+            changes.append("You have a surplus of $\(String(format: "%.2f", surplus)) - consider increasing savings")
+        } else if totalExpenses > totalIncome {
+            let deficit = totalExpenses - totalIncome
+            changes.append("You're overspending by $\(String(format: "%.2f", deficit)) - reduce expenses")
+        }
+        
+        changes.append("Budget based on \(categories.count) categories from your CSV data")
+        
+        let budget = Budget(
             id: UUID(),
-            monthlyTarget: monthlyTarget,
-            categories: categories.isEmpty ? getDefaultCategories(for: monthlyTarget) : categories,
-            changes: changes.isEmpty ? ["Budget optimized based on your spending patterns"] : changes,
+            monthlyTarget: budgetCategories.reduce(0) { $0 + $1.amount },
+            categories: budgetCategories,
+            changes: changes,
             createdDate: Date()
         )
-    }
-    
-    private func getDefaultCategories(for total: Double) -> [Budget.CategoryAllocation] {
-        return [
-            Budget.CategoryAllocation(name: "Housing", amount: total * 0.30, percentage: 30),
-            Budget.CategoryAllocation(name: "Food & Dining", amount: total * 0.12, percentage: 12),
-            Budget.CategoryAllocation(name: "Transportation", amount: total * 0.08, percentage: 8),
-            Budget.CategoryAllocation(name: "Savings", amount: total * 0.30, percentage: 30),
-            Budget.CategoryAllocation(name: "Other", amount: total * 0.20, percentage: 20)
-        ]
+        
+        isProcessing = false
+        onFinalize(budget)
     }
 }
 

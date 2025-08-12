@@ -1,19 +1,11 @@
 import SwiftUI
 
-extension Calendar {
-    func startOfMonth(for date: Date) -> Date {
-        let components = dateComponents([.year, .month], from: date)
-        return self.date(from: components) ?? date
-    }
-}
-
 struct InsightsView: View {
     @EnvironmentObject var csvProcessor: CSVProcessor
     @StateObject private var dataManager = DataManager.shared
-    @StateObject private var lfm2Manager = LFM2Manager.shared
-    @State private var selectedMonth = Date()
     @State private var cashFlow: CashFlowData?
     @State private var isAnalyzing = false
+    @State private var errorMessage: String?
     
     var body: some View {
         VContainer {
@@ -22,8 +14,6 @@ struct InsightsView: View {
                     Text("Insights")
                         .font(.veraTitle())
                         .foregroundColor(.black)
-                    
-                    MonthSelector(selectedMonth: $selectedMonth)
                     
                     if let cashFlow = cashFlow {
                         SankeyDiagram(data: cashFlow)
@@ -46,13 +36,21 @@ struct InsightsView: View {
                         .padding(.vertical, 50)
                     } else {
                         VStack(spacing: 16) {
-                            Image(systemName: "chart.pie")
+                            Image(systemName: errorMessage != nil ? "exclamationmark.triangle" : "chart.pie")
                                 .font(.custom("Inter", size: 48))
-                                .foregroundColor(.black.opacity(0.4))
+                                .foregroundColor(errorMessage != nil ? .red.opacity(0.6) : .black.opacity(0.4))
                             
-                            Text("No insights available yet")
-                                .font(.veraBody())
-                                .foregroundColor(.black.opacity(0.6))
+                            if let error = errorMessage {
+                                Text(error)
+                                    .font(.veraBody())
+                                    .foregroundColor(.red)
+                                    .multilineTextAlignment(.center)
+                                    .padding(.horizontal)
+                            } else {
+                                Text("No insights available yet")
+                                    .font(.veraBody())
+                                    .foregroundColor(.black.opacity(0.6))
+                            }
                             
                             VButton(title: "Analyze Transactions", style: .primary) {
                                 analyzeTransactions()
@@ -74,6 +72,7 @@ struct InsightsView: View {
     @MainActor
     private func analyzeTransactions() {
         isAnalyzing = true
+        errorMessage = nil
         
         Task {
             do {
@@ -82,15 +81,12 @@ struct InsightsView: View {
                 let processedTransactions = try await csvProcessor.processAllFiles()
                 print("✅ Processed \(processedTransactions.count) transactions")
                 
-                // Initialize LFM2 if needed
-                await lfm2Manager.initialize()
+                // Get ALL transactions (no month filtering)
+                let transactions = dataManager.transactions
+                print("📊 Analyzing \(transactions.count) total transactions")
                 
-                // Get transactions for the selected month from the newly processed data
-                let transactions = dataManager.fetchTransactions(for: selectedMonth)
-                print("📊 Analyzing \(transactions.count) transactions for selected month")
-                
-                // Use LFM2Manager to analyze spending with real AI
-                let cashFlowData = try await lfm2Manager.analyzeSpending(transactions)
+                // Calculate cash flow data based on CSV categories
+                let cashFlowData = calculateCashFlow(from: transactions)
                 
                 DispatchQueue.main.async {
                     self.cashFlow = cashFlowData
@@ -99,61 +95,50 @@ struct InsightsView: View {
             } catch {
                 DispatchQueue.main.async {
                     self.isAnalyzing = false
-                    // Handle error - could show an alert or error state
+                    self.errorMessage = error.localizedDescription
                     print("Failed to analyze transactions: \(error)")
                 }
             }
         }
     }
-}
-
-struct MonthSelector: View {
-    @Binding var selectedMonth: Date
     
-    private var monthFormatter: DateFormatter {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "MMMM yyyy"
-        return formatter
-    }
-    
-    private var isCurrentOrFutureMonth: Bool {
-        let calendar = Calendar.current
-        let currentMonth = calendar.startOfMonth(for: Date())
-        let selectedMonthStart = calendar.startOfMonth(for: selectedMonth)
-        return selectedMonthStart >= currentMonth
-    }
-    
-    var body: some View {
-        HStack {
-            Button(action: { changeMonth(-1) }) {
-                Image(systemName: "chevron.left")
-                    .font(.custom("Inter", size: 16).weight(.medium))
-                    .foregroundColor(.black)
-            }
-            
-            Spacer()
-            
-            Text(monthFormatter.string(from: selectedMonth))
-                .font(.veraBody())
-                .foregroundColor(.black)
-            
-            Spacer()
-            
-            Button(action: { changeMonth(1) }) {
-                Image(systemName: "chevron.right")
-                    .font(.custom("Inter", size: 16).weight(.medium))
-                    .foregroundColor(isCurrentOrFutureMonth ? .veraGrey.opacity(0.4) : .veraLightGreen)
-            }
-            .disabled(isCurrentOrFutureMonth)
+    private func calculateCashFlow(from transactions: [Transaction]) -> CashFlowData {
+        let income = transactions.filter { $0.amount > 0 }.reduce(0) { $0 + $1.amount }
+        let expenses = abs(transactions.filter { $0.amount < 0 }.reduce(0) { $0 + $1.amount })
+        
+        var categoryTotals: [String: Double] = [:]
+        
+        // Aggregate by category from CSV
+        for transaction in transactions.filter({ $0.amount < 0 }) {
+            let category = transaction.category ?? "Uncategorized"
+            categoryTotals[category, default: 0] += abs(transaction.amount)
         }
-        .padding()
-        .background(Color.veraWhite)
-        .cornerRadius(DesignSystem.smallCornerRadius)
-    }
-    
-    private func changeMonth(_ value: Int) {
-        if let newMonth = Calendar.current.date(byAdding: .month, value: value, to: selectedMonth) {
-            selectedMonth = newMonth
-        }
+        
+        // Sort categories by amount and create category objects
+        let categories = categoryTotals.map { key, value in
+            CashFlowData.Category(
+                name: key,
+                amount: value,
+                percentage: expenses > 0 ? (value / expenses) * 100 : 0
+            )
+        }.sorted { $0.amount > $1.amount }
+        
+        // Generate simple analysis text
+        let topCategory = categories.first?.name ?? "Unknown"
+        let topPercentage = categories.first?.percentage ?? 0
+        let analysis = """
+        Your spending is distributed across \(categories.count) categories.
+        The largest expense category is \(topCategory), accounting for \(String(format: "%.1f", topPercentage))% of total spending.
+        Total income: $\(String(format: "%.2f", income))
+        Total expenses: $\(String(format: "%.2f", expenses))
+        Net: $\(String(format: "%.2f", income - expenses))
+        """
+        
+        return CashFlowData(
+            income: income,
+            expenses: expenses,
+            categories: categories,
+            analysis: analysis
+        )
     }
 }

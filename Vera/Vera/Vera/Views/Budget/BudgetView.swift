@@ -5,6 +5,7 @@ struct BudgetView: View {
     @State private var messages: [ChatMessage] = []
     @State private var inputText = ""
     @State private var finalizedBudget: Budget?
+    @EnvironmentObject var csvProcessor: CSVProcessor
     
     enum BudgetMode {
         case chat
@@ -20,6 +21,7 @@ struct BudgetView: View {
                     inputText: $inputText,
                     onFinalize: finalizeBudget
                 )
+                .environmentObject(csvProcessor)
             case .summary:
                 BudgetSummaryView(
                     budget: finalizedBudget,
@@ -31,7 +33,7 @@ struct BudgetView: View {
             if messages.isEmpty {
                 messages.append(ChatMessage(
                     id: UUID(),
-                    content: "Hello! I'm here to help you create a personalized budget. Let's start by understanding your financial goals. What are you hoping to achieve with your budget?",
+                    content: "Hello! I'm here to help you create a budget based on your spending categories. Upload your CSV files in the Transactions tab first, then we can set budget targets for each category.",
                     isUser: false,
                     timestamp: Date()
                 ))

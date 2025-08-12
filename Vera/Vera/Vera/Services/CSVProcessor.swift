@@ -13,8 +13,8 @@ enum ProcessingStep {
     case readingFile
     case detectingColumns
     case extractingData
-    case mappingCategories
-    case categorizingTransactions
+    case extractingCategories
+    case aggregatingData
     case deduplicating
     case saving
     case complete
@@ -25,8 +25,8 @@ enum ProcessingStep {
         case .readingFile: return "Reading file..."
         case .detectingColumns: return "Detecting columns..."
         case .extractingData: return "Extracting data..."
-        case .mappingCategories: return "Mapping categories..."
-        case .categorizingTransactions: return "Categorizing transactions..."
+        case .extractingCategories: return "Extracting categories..."
+        case .aggregatingData: return "Aggregating by category..."
         case .deduplicating: return "Removing duplicates..."
         case .saving: return "Saving to database..."
         case .complete: return "Complete"
@@ -42,34 +42,10 @@ class CSVProcessor: ObservableObject {
     @Published var processingStep: ProcessingStep = .idle
     @Published var processingProgress: Double = 0.0
     @Published var processingMessage: String = ""
+    @Published var uniqueCategories: Set<String> = []
+    @Published var categoryTotals: [String: Double] = [:]
     
-    private let lfm2Service = LFM2Service.shared
     private let dataManager = DataManager.shared
-    
-    // Cache for merchant → category mappings
-    private var merchantCategoryCache: [String: String] = [:]
-    
-    // Standard categories for the app
-    private let standardCategories = [
-        "Food & Dining",
-        "Transportation", 
-        "Healthcare",
-        "Entertainment",
-        "Shopping",
-        "Utilities",
-        "Education",
-        "Insurance",
-        "Personal Care",
-        "Gifts & Donations",
-        "Business Services",
-        "Fees & Charges",
-        "Income",
-        "Housing",
-        "Savings",
-        "Investment",
-        "Travel",
-        "Other"
-    ]
     
     init() {
         // Don't load anything - files are not persistent
@@ -83,6 +59,8 @@ class CSVProcessor: ObservableObject {
     
     func clearImportedFiles() {
         importedFiles.removeAll()
+        uniqueCategories.removeAll()
+        categoryTotals.removeAll()
     }
     
     @MainActor
@@ -145,15 +123,13 @@ class CSVProcessor: ObservableObject {
             throw ProcessingError.noFiles
         }
         
-        print("🤖 Initializing LFM2 model...")
-        await lfm2Service.initialize()
-        
         isProcessing = true
         processingStep = .detectingColumns
         processingMessage = "Processing \(importedFiles.count) files..."
         processingProgress = 0.0
         
         var allTransactions: [ExtractedTransaction] = []
+        uniqueCategories.removeAll()
         
         // Process each CSV file
         for (index, file) in importedFiles.enumerated() {
@@ -166,16 +142,23 @@ class CSVProcessor: ObservableObject {
             
             guard lines.count > 1 else { continue }
             
-            // Step 1: Smart Column Detection
+            // Step 1: Column Detection (assuming category column exists)
             processingMessage = "Detecting columns in \(file.name)..."
             let headers = parseCSVLine(lines[0])
-            let sampleRow = lines.count > 1 ? parseCSVLine(lines[1]) : []
-            let columnMapping = try await detectColumns(headers: headers, sampleRow: sampleRow)
+            let columnMapping = try detectColumns(headers: headers)
             
-            // Step 2: Data Extraction
+            // Step 2: Data Extraction with Categories
             processingStep = .extractingData
             processingMessage = "Extracting data from \(file.name)..."
             let extractedTransactions = extractData(from: lines, using: columnMapping, headers: headers)
+            
+            // Collect unique categories
+            for transaction in extractedTransactions {
+                if let category = transaction.category {
+                    uniqueCategories.insert(category)
+                }
+            }
+            
             allTransactions.append(contentsOf: extractedTransactions)
             
             processingProgress = 0.3 * Double(index + 1) / Double(importedFiles.count)
@@ -183,27 +166,30 @@ class CSVProcessor: ObservableObject {
         }
         
         print("📊 Total extracted: \(allTransactions.count) transactions")
+        print("📂 Unique categories found: \(uniqueCategories.sorted())")
         
-        // Step 3: Category Standardization
-        processingStep = .mappingCategories
-        processingMessage = "Standardizing categories..."
-        processingProgress = 0.3
+        // Step 3: Extract and Display Categories
+        processingStep = .extractingCategories
+        processingMessage = "Found \(uniqueCategories.count) unique categories..."
+        processingProgress = 0.4
         
-        let (transactionsWithMappedCategories, _) = try await standardizeCategories(transactions: allTransactions)
-        
-        // Step 4: AI Categorization for transactions without categories
-        processingStep = .categorizingTransactions
-        processingMessage = "Categorizing transactions..."
+        // Step 4: Aggregate by Category
+        processingStep = .aggregatingData
+        processingMessage = "Aggregating by category..."
         processingProgress = 0.5
         
-        let categorizedTransactions = try await categorizeTransactions(transactionsWithMappedCategories)
+        categoryTotals = aggregateByCategory(transactions: allTransactions)
+        print("💰 Category totals:")
+        for (category, total) in categoryTotals.sorted(by: { $0.key < $1.key }) {
+            print("   \(category): $\(String(format: "%.2f", total))")
+        }
         
-        // Step 5: Remove Duplicates
+        // Step 5: Remove Duplicates (including transfers)
         processingStep = .deduplicating
-        processingMessage = "Removing duplicates..."
+        processingMessage = "Removing duplicates and transfers..."
         processingProgress = 0.7
         
-        let uniqueTransactions = removeDuplicates(from: categorizedTransactions)
+        let uniqueTransactions = removeDuplicatesAndTransfers(from: allTransactions)
         print("✅ After deduplication: \(uniqueTransactions.count) unique transactions")
         
         // Step 6: Save to Database
@@ -218,39 +204,15 @@ class CSVProcessor: ObservableObject {
         
         processingStep = .complete
         processingProgress = 1.0
-        processingMessage = "Analysis complete: \(transactions.count) unique transactions"
+        processingMessage = "Analysis complete: \(transactions.count) unique transactions in \(uniqueCategories.count) categories"
         
         print("✅ Processing complete!")
         print("📊 Summary:")
         print("   - Files processed: \(importedFiles.count)")
         print("   - Total extracted: \(allTransactions.count)")
         print("   - After deduplication: \(uniqueTransactions.count)")
+        print("   - Categories found: \(uniqueCategories.count)")
         print("   - Saved: \(transactions.count)")
-        
-        // Print detailed comparison table
-        print("\n📊 DETAILED TRANSACTION CATEGORIZATION LOG:")
-        print(String(repeating: "=", count: 120))
-        print(String(format: "%-40s | %-20s | %-20s | %-10s | %-8s", 
-                     "Merchant", "Original CSV", "Final Category", "Amount", "Type"))
-        print(String(repeating: "=", count: 120))
-        
-        for transaction in transactions {
-            // Extract original category from the ExtractedTransaction if available
-            let originalCat = "[check logs above]" // We need to pass this through from ExtractedTransaction
-            let finalCat = transaction.category ?? "Other"
-            let amountStr = String(format: "$%.2f", abs(transaction.amount))
-            let typeStr = transaction.amount < 0 ? "Expense" : "Income"
-            let merchantName = String(transaction.description.prefix(40))
-            
-            print(String(format: "%-40s | %-20s | %-20s | %-10s | %-8s",
-                         merchantName,
-                         originalCat,
-                         String(finalCat.prefix(20)),
-                         amountStr,
-                         typeStr))
-        }
-        print(String(repeating: "=", count: 120))
-        print("\n")
         
         DispatchQueue.main.asyncAfter(deadline: .now() + 2) { [weak self] in
             self?.processingStep = .idle
@@ -260,7 +222,7 @@ class CSVProcessor: ObservableObject {
         return transactions
     }
     
-    // MARK: - Step 1: Smart Column Detection
+    // MARK: - Step 1: Column Detection
     
     private struct ColumnMapping {
         var dateColumn: String?
@@ -271,24 +233,7 @@ class CSVProcessor: ObservableObject {
         var categoryColumn: String?
     }
     
-    private func detectColumns(headers: [String], sampleRow: [String]) async throws -> ColumnMapping {
-        // Fast Path: Try pattern matching first
-        let fastMapping = detectColumnsFastPath(headers: headers)
-        
-        // If we found essential columns, use fast path
-        if fastMapping.dateColumn != nil && 
-           (fastMapping.amountColumn != nil || (fastMapping.debitColumn != nil && fastMapping.creditColumn != nil)) &&
-           fastMapping.merchantColumn != nil {
-            print("✅ Fast path column detection successful")
-            return fastMapping
-        }
-        
-        // AI Path: Use LFM2 for unusual formats
-        print("🤖 Using AI for column detection...")
-        return try await detectColumnsWithAI(headers: headers, sampleRow: sampleRow)
-    }
-    
-    private func detectColumnsFastPath(headers: [String]) -> ColumnMapping {
+    private func detectColumns(headers: [String]) throws -> ColumnMapping {
         var mapping = ColumnMapping()
         
         for header in headers {
@@ -345,78 +290,38 @@ class CSVProcessor: ObservableObject {
                 mapping.merchantColumn = header
             }
             
-            // Category detection
+            // Category detection - REQUIRED
             if mapping.categoryColumn == nil && (
                 lower.contains("category") ||
                 lower.contains("type") ||
-                lower == "transaction type"
+                lower == "transaction type" ||
+                lower == "class" ||
+                lower == "classification"
             ) {
                 mapping.categoryColumn = header
             }
         }
         
-        print("📊 Fast path mapping:")
+        // Validate essential columns
+        guard mapping.dateColumn != nil,
+              mapping.merchantColumn != nil,
+              (mapping.amountColumn != nil || (mapping.debitColumn != nil && mapping.creditColumn != nil)) else {
+            throw ProcessingError.missingRequiredColumns("Missing required columns. Need: date, merchant, and amount (or debit/credit)")
+        }
+        
+        // Check specifically for category column
+        guard mapping.categoryColumn != nil else {
+            throw ProcessingError.missingCategoryColumn("Error: Categories couldn't be identified. No 'Category' column found in CSV. Please ensure your CSV has a column named 'Category', 'Type', 'Transaction Type', 'Class', or 'Classification'.")
+        }
+        
+        print("📊 Column mapping:")
         print("   Date: \(mapping.dateColumn ?? "not found")")
         print("   Amount: \(mapping.amountColumn ?? "not found")")
         print("   Debit: \(mapping.debitColumn ?? "not found")")
         print("   Credit: \(mapping.creditColumn ?? "not found")")
         print("   Merchant: \(mapping.merchantColumn ?? "not found")")
-        print("   Category: \(mapping.categoryColumn ?? "not found")")
+        print("   Category: \(mapping.categoryColumn ?? "not found") ✅")
         
-        return mapping
-    }
-    
-    private func detectColumnsWithAI(headers: [String], sampleRow: [String]) async throws -> ColumnMapping {
-        let headerList = headers.joined(separator: ", ")
-        let sampleData = sampleRow.joined(separator: ", ")
-        
-        let prompt = """
-        Analyze these CSV headers and identify which columns contain transaction data.
-        
-        Headers: \(headerList)
-        Sample row: \(sampleData)
-        
-        Identify columns for:
-        - date: transaction date
-        - merchant: merchant/vendor/description
-        - amount: single amount column (with +/- for income/expense)
-        - debit: separate debit/withdrawal column (if no single amount)
-        - credit: separate credit/deposit column (if no single amount)
-        - category: transaction category (may not exist)
-        
-        IMPORTANT: Banks use EITHER single "amount" OR separate "debit/credit", never both.
-        Return null for columns that don't exist.
-        
-        Respond with ONLY this JSON format:
-        {"date": "header_name", "merchant": "header_name", "amount": null, "debit": "header_name", "credit": "header_name", "category": null}
-        
-        Use exact header names from the list. Use null if column doesn't exist.
-        """
-        
-        let response = try await lfm2Service.inference(prompt, type: "ColumnDetector")
-        
-        // Parse JSON response
-        guard let jsonData = extractJSON(from: response),
-              let json = try? JSONSerialization.jsonObject(with: jsonData) as? [String: Any] else {
-            throw ProcessingError.parsingFailed("Failed to parse column detection response")
-        }
-        
-        var mapping = ColumnMapping()
-        mapping.dateColumn = json["date"] as? String
-        mapping.merchantColumn = json["merchant"] as? String
-        mapping.amountColumn = json["amount"] as? String
-        mapping.debitColumn = json["debit"] as? String
-        mapping.creditColumn = json["credit"] as? String
-        mapping.categoryColumn = json["category"] as? String
-        
-        // Validate essential columns
-        guard mapping.dateColumn != nil,
-              mapping.merchantColumn != nil,
-              (mapping.amountColumn != nil || (mapping.debitColumn != nil && mapping.creditColumn != nil)) else {
-            throw ProcessingError.parsingFailed("Missing essential columns (date, merchant, amount)")
-        }
-        
-        print("✅ AI column detection successful")
         return mapping
     }
     
@@ -426,8 +331,7 @@ class CSVProcessor: ObservableObject {
         let date: String
         let merchant: String
         let amount: Double
-        var category: String?
-        var originalCategory: String? // Track original CSV category for comparison
+        let category: String?
     }
     
     private func extractData(from lines: [String], using mapping: ColumnMapping, headers: [String]) -> [ExtractedTransaction] {
@@ -477,12 +381,14 @@ class CSVProcessor: ObservableObject {
                 }
             }
             
-            // Extract category (optional)
+            // Extract category (REQUIRED)
             var category: String?
             if let categoryCol = mapping.categoryColumn, let idx = headerIndex[categoryCol] {
                 let cat = values[idx].trimmingCharacters(in: .whitespaces)
                 if !cat.isEmpty {
                     category = cat
+                } else {
+                    category = "Uncategorized" // Default for empty categories
                 }
             }
             
@@ -496,13 +402,12 @@ class CSVProcessor: ObservableObject {
                 date: validDate,
                 merchant: validMerchant,
                 amount: amount,
-                category: category,
-                originalCategory: category // Store original for comparison
+                category: category ?? "Uncategorized"
             )
             transactions.append(transaction)
             
             // Log extracted transaction
-            print("📝 Row \(i): Date=\(validDate), Merchant=\(validMerchant), Amount=$\(String(format: "%.2f", amount)), CSV Category=\(category ?? "[none]")")
+            print("📝 Row \(i): Date=\(validDate), Merchant=\(validMerchant), Amount=$\(String(format: "%.2f", amount)), Category=\(category ?? "Uncategorized")")
         }
         
         return transactions
@@ -537,297 +442,77 @@ class CSVProcessor: ObservableObject {
         return cleaned.trimmingCharacters(in: .whitespaces)
     }
     
-    // MARK: - Step 3: Category Standardization
+    // MARK: - Step 3: Aggregate by Category
     
-    private func standardizeCategories(transactions: [ExtractedTransaction]) async throws -> ([ExtractedTransaction], [String: String]) {
-        // Extract unique CSV categories
-        let csvCategories = Set(transactions.compactMap { $0.category })
-        
-        guard !csvCategories.isEmpty else {
-            // No categories in CSV, return as-is
-            return (transactions, [:])
-        }
-        
-        print("📊 Found \(csvCategories.count) unique categories in CSV:")
-        for cat in csvCategories.sorted() {
-            print("   - \(cat)")
-        }
-        
-        // Map to standard categories
-        let categoryMapping = try await mapToStandardCategories(csvCategories: Array(csvCategories))
-        
-        // Log the mapping
-        print("\n🔄 Category Mapping Results:")
-        for (csvCat, standardCat) in categoryMapping.sorted(by: { $0.key < $1.key }) {
-            print("   '\(csvCat)' → '\(standardCat)'")
-        }
-        
-        // Apply mapping to transactions
-        var mappedTransactions: [ExtractedTransaction] = []
-        print("\n📋 Applying category mapping to transactions:")
-        for (index, transaction) in transactions.enumerated() {
-            var updated = transaction
-            updated.originalCategory = transaction.originalCategory // Preserve original
-            if let csvCategory = transaction.category,
-               let standardCategory = categoryMapping[csvCategory] {
-                updated.category = standardCategory
-                print("   Transaction \(index + 1): '\(csvCategory)' → '\(standardCategory)' [\(transaction.merchant)]")
-            } else if transaction.category != nil {
-                print("   Transaction \(index + 1): '\(transaction.category!)' → [no mapping found] [\(transaction.merchant)]")
-            }
-            mappedTransactions.append(updated)
-        }
-        
-        print("\n📊 Category Standardization Complete")
-        return (mappedTransactions, categoryMapping)
-    }
-    
-    private func mapToStandardCategories(csvCategories: [String]) async throws -> [String: String] {
-        // Build batch prompt for efficiency
-        let prompt = """
-        Map each CSV category to the best matching standard category.
-        
-        Standard categories: \(standardCategories.joined(separator: ", "))
-        
-        CSV categories to map:
-        \(csvCategories.map { "- \($0)" }.joined(separator: "\n"))
-        
-        Return ONLY a JSON object mapping each CSV category to a standard category:
-        {"csv_category": "standard_category", ...}
-        
-        Use exact spelling from standard categories. When unsure, use "Other".
-        """
-        
-        print("\n🔄 Requesting category mapping from AI...")
-        print("   CSV categories to map: \(csvCategories)")
-        
-        let response = try await lfm2Service.inference(prompt, type: "CategoryMapper")
-        
-        print("\n🤖 AI Category Mapping Response:")
-        print("   Raw response: \(response)")
-        
-        guard let jsonData = extractJSON(from: response),
-              let mapping = try? JSONSerialization.jsonObject(with: jsonData) as? [String: String] else {
-            print("   ⚠️ Failed to parse mapping response, using heuristic fallback")
-            // Fallback to heuristic mapping
-            let heuristicMap = heuristicCategoryMapping(csvCategories: csvCategories)
-            print("   📋 Heuristic mapping:")
-            for (csv, standard) in heuristicMap {
-                print("      '\(csv)' → '\(standard)'")
-            }
-            return heuristicMap
-        }
-        
-        print("   ✅ Successfully parsed mapping:")
-        for (csv, standard) in mapping {
-            print("      '\(csv)' → '\(standard)'")
-        }
-        
-        print("✅ Mapped \(mapping.count) categories to standards")
-        return mapping
-    }
-    
-    private func heuristicCategoryMapping(csvCategories: [String]) -> [String: String] {
-        var mapping: [String: String] = [:]
-        
-        for category in csvCategories {
-            let lower = category.lowercased()
-            
-            if lower.contains("food") || lower.contains("dining") || lower.contains("restaurant") {
-                mapping[category] = "Food & Dining"
-            } else if lower.contains("transport") || lower.contains("fuel") || lower.contains("uber") {
-                mapping[category] = "Transportation"
-            } else if lower.contains("health") || lower.contains("medical") || lower.contains("pharmacy") {
-                mapping[category] = "Healthcare"
-            } else if lower.contains("entertainment") || lower.contains("movie") || lower.contains("game") {
-                mapping[category] = "Entertainment"
-            } else if lower.contains("shop") || lower.contains("retail") || lower.contains("store") {
-                mapping[category] = "Shopping"
-            } else if lower.contains("utilit") || lower.contains("electric") || lower.contains("water") {
-                mapping[category] = "Utilities"
-            } else if lower.contains("income") || lower.contains("salary") || lower.contains("deposit") {
-                mapping[category] = "Income"
-            } else {
-                mapping[category] = "Other"
-            }
-        }
-        
-        return mapping
-    }
-    
-    // MARK: - Step 4: AI Categorization
-    
-    private func categorizeTransactions(_ transactions: [ExtractedTransaction]) async throws -> [ExtractedTransaction] {
-        // Filter transactions without categories
-        let uncategorized = transactions.enumerated().filter { $0.element.category == nil }
-        
-        if uncategorized.isEmpty {
-            print("✅ All transactions already have categories")
-            return transactions
-        }
-        
-        print("\n🤖 AI Categorization Phase:")
-        print("   Found \(uncategorized.count) transactions without categories")
-        
-        var result = transactions
-        let batchSize = 10
-        
-        // Process in batches for efficiency
-        for i in stride(from: 0, to: uncategorized.count, by: batchSize) {
-            let endIndex = min(i + batchSize, uncategorized.count)
-            let batch = Array(uncategorized[i..<endIndex])
-            
-            // Check cache first
-            var cached: [(Int, String)] = []
-            var needsAI: [(Int, ExtractedTransaction)] = []
-            
-            for (idx, transaction) in batch {
-                if let cachedCategory = merchantCategoryCache[transaction.merchant] {
-                    cached.append((idx, cachedCategory))
-                } else {
-                    needsAI.append((idx, transaction))
-                }
-            }
-            
-            // Apply cached categories
-            for (idx, category) in cached {
-                let transaction = result[idx]
-                result[idx].category = category
-                print("   💾 Cache hit: '\(transaction.merchant)' → '\(category)'")
-            }
-            
-            // Process uncached with AI
-            if !needsAI.isEmpty {
-                let categories = try await categorizeBatch(needsAI.map { $0.1 })
-                
-                for ((idx, transaction), category) in zip(needsAI, categories) {
-                    result[idx].category = category
-                    // Update cache
-                    merchantCategoryCache[transaction.merchant] = category
-                    print("   🤖 AI categorized: '\(transaction.merchant)' (\(transaction.amount < 0 ? "expense" : "income")) → '\(category)'")
-                }
-            }
-            
-            processingProgress = 0.5 + (0.2 * Double(i + batch.count) / Double(uncategorized.count))
-        }
-        
-        // Final summary
-        print("\n\n=== CATEGORIZATION SUMMARY ===")
-        print("Total transactions: \(result.count)")
-        
-        // Group by category and show counts
-        var categoryCounts: [String: Int] = [:]
-        for transaction in result {
-            let cat = transaction.category ?? "Other"
-            categoryCounts[cat, default: 0] += 1
-        }
-        
-        print("\nCategory Distribution:")
-        for (category, count) in categoryCounts.sorted(by: { $0.key < $1.key }) {
-            print("   \(category): \(count) transactions")
-        }
-        
-        // Show sample transactions per category
-        print("\n📝 Sample Transactions by Category:")
-        for category in categoryCounts.keys.sorted() {
-            let samples = result.filter { $0.category == category }.prefix(3)
-            if !samples.isEmpty {
-                print("\n   \(category):")
-                for transaction in samples {
-                    let originalCat = transaction.originalCategory ?? "[no CSV category]"
-                    print("      • \(transaction.merchant) ($\(String(format: "%.2f", abs(transaction.amount)))) - Original: \(originalCat)")
-                }
-            }
-        }
-        
-        print("\n=== END CATEGORIZATION SUMMARY ===\n")
-        
-        return result
-    }
-    
-    private func categorizeBatch(_ transactions: [ExtractedTransaction]) async throws -> [String] {
-        let transactionList = transactions.map { 
-            "Merchant: \($0.merchant), Amount: $\(String(format: "%.2f", abs($0.amount))) \($0.amount < 0 ? "expense" : "income")"
-        }.joined(separator: "\n")
-        
-        let prompt = """
-        Categorize these transactions into standard categories.
-        
-        Standard categories: \(standardCategories.joined(separator: ", "))
-        
-        Transactions:
-        \(transactionList)
-        
-        Return ONLY a JSON array with one category per transaction in order:
-        ["category1", "category2", ...]
-        
-        Use exact category names from the standard list.
-        """
-        
-        print("\n🔍 Batch categorization request:")
-        print("   Transactions to categorize:")
-        for (i, t) in transactions.enumerated() {
-            print("   \(i+1). \(t.merchant) ($\(String(format: "%.2f", abs(t.amount))) \(t.amount < 0 ? "expense" : "income"))")
-        }
-        
-        let response = try await lfm2Service.inference(prompt, type: "BatchCategorizer")
-        
-        print("\n🤖 AI Response for batch:")
-        print("   Raw response: \(response)")
-        
-        guard let jsonData = extractJSON(from: response),
-              let categories = try? JSONSerialization.jsonObject(with: jsonData) as? [String] else {
-            print("   ⚠️ Failed to parse batch response, falling back to individual categorization")
-            // Fallback to individual categorization
-            var categories: [String] = []
-            for transaction in transactions {
-                let category = try await lfm2Service.categorizeTransaction(transaction.merchant)
-                categories.append(category)
-                print("   Individual: \(transaction.merchant) → \(category)")
-            }
-            return categories
-        }
-        
-        print("   ✅ Parsed categories: \(categories)")
-        for (i, cat) in categories.enumerated() {
-            if i < transactions.count {
-                print("   \(i+1). \(transactions[i].merchant) → \(cat)")
-            }
-        }
-        
-        // Ensure we have the right number of categories
-        guard categories.count == transactions.count else {
-            print("⚠️ Category count mismatch, falling back to individual categorization")
-            var fallbackCategories: [String] = []
-            for transaction in transactions {
-                let category = try await lfm2Service.categorizeTransaction(transaction.merchant)
-                fallbackCategories.append(category)
-            }
-            return fallbackCategories
-        }
-        
-        return categories
-    }
-    
-    // MARK: - Step 5: Deduplication
-    
-    private func removeDuplicates(from transactions: [ExtractedTransaction]) -> [ExtractedTransaction] {
-        var seen = Set<String>()
-        var unique: [ExtractedTransaction] = []
+    private func aggregateByCategory(transactions: [ExtractedTransaction]) -> [String: Double] {
+        var totals: [String: Double] = [:]
         
         for transaction in transactions {
+            let category = transaction.category ?? "Uncategorized"
+            totals[category, default: 0] += transaction.amount
+        }
+        
+        return totals
+    }
+    
+    // MARK: - Step 4: Deduplication
+    
+    private func removeDuplicatesAndTransfers(from transactions: [ExtractedTransaction]) -> [ExtractedTransaction] {
+        var seen = Set<String>()
+        var unique: [ExtractedTransaction] = []
+        var potentialTransfers: [(ExtractedTransaction, Int)] = []
+        
+        // First pass: collect all transactions and mark potential transfers
+        for (index, transaction) in transactions.enumerated() {
             let key = "\(transaction.date)|\(transaction.amount)|\(transaction.merchant)"
             
             if !seen.contains(key) {
                 seen.insert(key)
                 unique.append(transaction)
+                
+                // Check if this might be a transfer
+                let merchantLower = transaction.merchant.lowercased()
+                if merchantLower.contains("transfer") || 
+                   merchantLower.contains("savings") ||
+                   merchantLower.contains("checking") ||
+                   merchantLower.contains("account") {
+                    potentialTransfers.append((transaction, unique.count - 1))
+                }
             }
         }
         
-        return unique
+        // Second pass: remove matching transfers (opposite amounts on same date)
+        var indicesToRemove = Set<Int>()
+        for i in 0..<potentialTransfers.count {
+            for j in (i+1)..<potentialTransfers.count {
+                let trans1 = potentialTransfers[i].0
+                let trans2 = potentialTransfers[j].0
+                
+                // Check if they're matching transfers (same date, opposite amounts)
+                if trans1.date == trans2.date && 
+                   abs(trans1.amount + trans2.amount) < 0.01 { // Opposite amounts
+                    indicesToRemove.insert(potentialTransfers[i].1)
+                    indicesToRemove.insert(potentialTransfers[j].1)
+                    print("🔄 Removed transfer pair: \(trans1.merchant) ↔ \(trans2.merchant) for $\(abs(trans1.amount))")
+                }
+            }
+        }
+        
+        // Remove the identified transfer pairs
+        let finalUnique = unique.enumerated().compactMap { index, transaction in
+            indicesToRemove.contains(index) ? nil : transaction
+        }
+        
+        print("🧹 Deduplication complete:")
+        print("   - Original: \(transactions.count)")
+        print("   - After exact duplicates: \(unique.count)")
+        print("   - After transfer removal: \(finalUnique.count)")
+        print("   - Transfers removed: \(indicesToRemove.count) transactions")
+        
+        return finalUnique
     }
     
-    // MARK: - Step 6: Create Transaction Objects
+    // MARK: - Step 5: Create Transaction Objects
     
     private func createTransactionObjects(from extractedTransactions: [ExtractedTransaction]) -> [Transaction] {
         return extractedTransactions.compactMap { extracted in
@@ -840,7 +525,7 @@ class CSVProcessor: ObservableObject {
                 amount: extracted.amount,
                 description: extracted.merchant,
                 counterparty: extracted.merchant,
-                category: extracted.category ?? "Other"
+                category: extracted.category ?? "Uncategorized"
             )
         }
     }
@@ -903,34 +588,22 @@ class CSVProcessor: ObservableObject {
         return Double(cleanValue) ?? 0.0
     }
     
-    private func extractJSON(from response: String) -> Data? {
-        // Find JSON object or array in response
-        let patterns = [
-            (#"\{[^}]*\}"#, true),  // JSON object
-            (#"\[[^\]]*\]"#, true)  // JSON array
-        ]
-        
-        for (pattern, _) in patterns {
-            if let range = response.range(of: pattern, options: .regularExpression) {
-                let jsonString = String(response[range])
-                return jsonString.data(using: .utf8)
-            }
-        }
-        
-        // Try the whole response
-        return response.data(using: .utf8)
-    }
-    
     // MARK: - Error Types
     
     enum ProcessingError: LocalizedError {
         case noFiles
+        case missingRequiredColumns(String)
+        case missingCategoryColumn(String)
         case parsingFailed(String)
         
         var errorDescription: String? {
             switch self {
             case .noFiles:
                 return "No CSV files have been imported. Please add files first."
+            case .missingRequiredColumns(let reason):
+                return "Missing required columns: \(reason)"
+            case .missingCategoryColumn(let reason):
+                return reason
             case .parsingFailed(let reason):
                 return "Failed to parse CSV: \(reason)"
             }

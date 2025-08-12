@@ -10,6 +10,7 @@ import CoreData
 
 struct ContentView: View {
     @State private var selectedTab = 0
+    @EnvironmentObject var csvProcessor: CSVProcessor
     
     var body: some View {
         ZStack {
@@ -19,12 +20,15 @@ struct ContentView: View {
                 ZStack {
                     TransactionsView()
                         .opacity(selectedTab == 0 ? 1 : 0)
+                        .environmentObject(csvProcessor)
                     
                     InsightsView()
                         .opacity(selectedTab == 1 ? 1 : 0)
+                        .environmentObject(csvProcessor)
                     
                     BudgetView()
                         .opacity(selectedTab == 2 ? 1 : 0)
+                        .environmentObject(csvProcessor)
                 }
                 .frame(maxHeight: .infinity)
                 

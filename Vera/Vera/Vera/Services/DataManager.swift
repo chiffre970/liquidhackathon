@@ -44,22 +44,9 @@ class DataManager: ObservableObject {
             self.isLoading = true
         }
         
+        // Simply append all transactions - categories come from CSV
         for transaction in newTransactions {
-            if transaction.category == nil {
-                var categorizedTransaction = transaction
-                do {
-                    categorizedTransaction.category = try await LFM2Manager.shared.categorizeTransaction(transaction.description)
-                    categorizedTransaction.isAnalyzed = true
-                } catch {
-                    // If categorization fails, mark as "Other" and log the error
-                    print("Failed to categorize transaction: \(error)")
-                    categorizedTransaction.category = "Other"
-                    categorizedTransaction.isAnalyzed = false
-                }
-                transactions.append(categorizedTransaction)
-            } else {
-                transactions.append(transaction)
-            }
+            transactions.append(transaction)
         }
         
         DispatchQueue.main.async {
