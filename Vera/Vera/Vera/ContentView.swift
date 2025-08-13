@@ -9,7 +9,22 @@ import SwiftUI
 
 struct ContentView: View {
     var body: some View {
-        RecordingView()
-            .preferredColorScheme(.light)
+        TabView {
+            MeetingView()
+                .tabItem {
+                    Label("Record", systemImage: "mic.circle")
+                }
+            
+            MeetingListView()
+                .tabItem {
+                    Label("Meetings", systemImage: "list.bullet")
+                }
+            
+            SettingsView()
+                .tabItem {
+                    Label("Settings", systemImage: "gear")
+                }
+        }
+        .preferredColorScheme(.light)
     }
 }

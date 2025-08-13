@@ -1,18 +1,19 @@
-# Vera - AI Thought Organizer
+# Vera - AI-Powered Meeting Assistant
 
-An elegant iOS app that captures your spoken thoughts and intelligently organizes them using on-device AI.
+An intelligent iOS app that records meetings, transcribes conversations in real-time, and uses on-device AI to extract actionable insights.
 
 ## Vision
 
-Vera transforms fleeting thoughts into organized, actionable insights. Simply tap the ethereal particle orb, speak your mind, and let the app transcribe and categorize your thoughts in the background using the powerful LFM2 700M model.
+Vera transforms meetings into structured, actionable intelligence. Simply tap to record, and let the app transcribe conversations and extract action items, key decisions, and important questions using the powerful LFM2 700M model - all processed locally on your device.
 
 ## Features
 
-- **Effortless Capture**: Tap floating particles to start/stop recording
-- **Automatic Transcription**: Apple's Speech framework converts speech to text
-- **Intelligent Organization**: LFM2 categorizes thoughts as Actions or Ideas
-- **Smart Reminders**: Action items trigger task-based notifications, thoughts trigger content-based insights
-- **Beautiful Visualization**: Ethereal particle orb with pink/purple/blue/red fluid animations
+- **One-Tap Recording**: Start/stop meeting recordings with minimal friction
+- **Real-Time Transcription**: Apple's Speech framework converts speech to text as you record
+- **Intelligent Enhancement**: LFM2 generates summaries, extracts action items, and identifies key decisions
+- **Smart Organization**: Automatically categorizes and tags meeting content
+- **Action Tracking**: Extracted tasks with owners, deadlines, and completion status
+- **Professional Export**: Share notes as Markdown, PDF, or formatted email
 - **Complete Privacy**: All processing happens on-device, no cloud dependencies
 
 ## Technical Stack
@@ -30,13 +31,13 @@ Vera transforms fleeting thoughts into organized, actionable insights. Simply ta
 ```
 Vera/
 ├── Core/
-│   ├── Models/         # Thought, Session, Category
-│   ├── Services/       # Audio, Transcription, AI Processing
+│   ├── Models/         # Meeting, ActionItem, KeyDecision
+│   ├── Services/       # Recording, Transcription, AI Enhancement
 │   └── Storage/        # Core Data persistence
-├── UI/
-│   ├── Particles/      # Orb visualization
-│   ├── Recording/      # Recording interface
-│   └── Library/        # Thought browsing (future)
+├── Views/
+│   ├── Meeting/        # Recording interface
+│   ├── MeetingList/    # Meeting history
+│   └── MeetingDetail/  # Enhanced notes view
 └── Resources/
     └── LFM2/           # 700M model bundle
 ```
@@ -47,6 +48,7 @@ Vera/
 - All AI inference on-device
 - No analytics or tracking
 - Secure local storage only
+- Audio recordings encrypted at rest
 
 ## Development
 
@@ -62,6 +64,41 @@ Built for the Liquid AI Hackathon 2025
 xcodebuild -project Vera.xcodeproj -scheme Vera -sdk iphoneos
 ```
 
+## Key Capabilities
+
+### Meeting Recording
+- Continuous audio capture with pause/resume
+- Background recording support
+- Automatic 30-second chunking for reliability
+- Handle interruptions gracefully
+
+### AI Enhancement
+- Executive summaries in 2-3 sentences
+- Action item extraction with owners and deadlines
+- Key decision identification with context
+- Unresolved questions flagged for follow-up
+
+### Export Options
+- Markdown with structured formatting
+- PDF for professional distribution
+- Direct integration with email and messaging apps
+- JSON for system integration
+
 ## Status
 
 🚧 Under active development for hackathon submission
+
+### Completed
+- ✅ Core recording infrastructure
+- ✅ Meeting data model
+- ✅ Audio chunking system
+
+### In Progress
+- 🔄 Real-time transcription
+- 🔄 UI implementation
+- 🔄 LFM2 integration
+
+### Upcoming
+- ⏳ Export functionality
+- ⏳ Template system
+- ⏳ Search capabilities

@@ -6,13 +6,15 @@
 //
 
 import SwiftUI
+import CoreData
 
 @main
 struct VeraApp: App {
     @StateObject private var lfm2Manager = LFM2Manager.shared
+    let persistenceController = PersistenceController.shared
     
     init() {
-        print("🚀 Initializing Vera Thought Organizer...")
+        print("🚀 Initializing Vera Meeting Notes...")
         
         BackgroundProcessor.shared.registerBackgroundTasks()
     }
@@ -20,6 +22,7 @@ struct VeraApp: App {
     var body: some Scene {
         WindowGroup {
             ContentView()
+                .environment(\.managedObjectContext, persistenceController.container.viewContext)
                 .environmentObject(lfm2Manager)
                 .preferredColorScheme(.light)
                 .task {
@@ -30,5 +33,23 @@ struct VeraApp: App {
                     BackgroundProcessor.shared.scheduleBackgroundProcessing()
                 }
         }
+    }
+}
+
+class PersistenceController: ObservableObject {
+    static let shared = PersistenceController()
+    
+    let container: NSPersistentContainer
+    
+    init() {
+        container = NSPersistentContainer(name: "Vera")
+        
+        container.loadPersistentStores { storeDescription, error in
+            if let error = error as NSError? {
+                fatalError("Unresolved error \(error), \(error.userInfo)")
+            }
+        }
+        
+        container.viewContext.automaticallyMergesChangesFromParent = true
     }
 }

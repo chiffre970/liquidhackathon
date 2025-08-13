@@ -7,11 +7,12 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		8C2AADD22E4C741D00AE8768 /* LeapModelDownloader in Frameworks */ = {isa = PBXBuildFile; productRef = 8C2AADD12E4C741D00AE8768 /* LeapModelDownloader */; };
+		8C2AADD42E4C741D00AE8768 /* LeapSDK in Frameworks */ = {isa = PBXBuildFile; productRef = 8C2AADD32E4C741D00AE8768 /* LeapSDK */; };
 		8CC427B42E4845DD003D5E74 /* Accelerate.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8CC427B32E4845DD003D5E74 /* Accelerate.framework */; };
 		8CC427B62E4845E5003D5E74 /* Metal.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8CC427B52E4845E5003D5E74 /* Metal.framework */; };
 		8CC427B82E4845F0003D5E74 /* MetalPerformanceShaders.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8CC427B72E4845F0003D5E74 /* MetalPerformanceShaders.framework */; };
 		8CC427BA2E4845F5003D5E74 /* CoreML.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8CC427B92E4845F5003D5E74 /* CoreML.framework */; };
-		8CE8DBBC2E46E681006A9CB2 /* LeapSDK in Frameworks */ = {isa = PBXBuildFile; productRef = 8CE8DBBB2E46E681006A9CB2 /* LeapSDK */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -67,8 +68,9 @@
 				8CC427BA2E4845F5003D5E74 /* CoreML.framework in Frameworks */,
 				8CC427B82E4845F0003D5E74 /* MetalPerformanceShaders.framework in Frameworks */,
 				8CC427B62E4845E5003D5E74 /* Metal.framework in Frameworks */,
+				8C2AADD42E4C741D00AE8768 /* LeapSDK in Frameworks */,
+				8C2AADD22E4C741D00AE8768 /* LeapModelDownloader in Frameworks */,
 				8CC427B42E4845DD003D5E74 /* Accelerate.framework in Frameworks */,
-				8CE8DBBC2E46E681006A9CB2 /* LeapSDK in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -141,7 +143,8 @@
 			);
 			name = Vera;
 			packageProductDependencies = (
-				8CE8DBBB2E46E681006A9CB2 /* LeapSDK */,
+				8C2AADD12E4C741D00AE8768 /* LeapModelDownloader */,
+				8C2AADD32E4C741D00AE8768 /* LeapSDK */,
 			);
 			productName = Vera;
 			productReference = 8CE8DB172E457610006A9CB2 /* Vera.app */;
@@ -226,7 +229,7 @@
 			mainGroup = 8CE8DB0E2E457610006A9CB2;
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
-				8CE8DBBA2E46E681006A9CB2 /* XCRemoteSwiftPackageReference "leap-ios" */,
+				8C2AADD02E4C741D00AE8768 /* XCRemoteSwiftPackageReference "leap-ios" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 8CE8DB182E457610006A9CB2 /* Products */;
@@ -433,14 +436,14 @@
 				DEVELOPMENT_TEAM = M6QB73QRG6;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Vera needs microphone access to record your thoughts and ideas for organization.";
+				INFOPLIST_KEY_NSSpeechRecognitionUsageDescription = "Vera transcribes your speech locally to organize your thoughts without sending data to any servers.";
+				INFOPLIST_KEY_NSUserNotificationsUsageDescription = "Vera sends reminders about your actions and insights from your recorded thoughts.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
-				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Vera needs microphone access to record your thoughts and ideas for organization.";
-				INFOPLIST_KEY_NSSpeechRecognitionUsageDescription = "Vera transcribes your speech locally to organize your thoughts without sending data to any servers.";
-				INFOPLIST_KEY_NSUserNotificationsUsageDescription = "Vera sends reminders about your actions and insights from your recorded thoughts.";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -468,14 +471,14 @@
 				DEVELOPMENT_TEAM = M6QB73QRG6;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Vera needs microphone access to record your thoughts and ideas for organization.";
+				INFOPLIST_KEY_NSSpeechRecognitionUsageDescription = "Vera transcribes your speech locally to organize your thoughts without sending data to any servers.";
+				INFOPLIST_KEY_NSUserNotificationsUsageDescription = "Vera sends reminders about your actions and insights from your recorded thoughts.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
-				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Vera needs microphone access to record your thoughts and ideas for organization.";
-				INFOPLIST_KEY_NSSpeechRecognitionUsageDescription = "Vera transcribes your speech locally to organize your thoughts without sending data to any servers.";
-				INFOPLIST_KEY_NSUserNotificationsUsageDescription = "Vera sends reminders about your actions and insights from your recorded thoughts.";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -607,7 +610,7 @@
 /* End XCConfigurationList section */
 
 /* Begin XCRemoteSwiftPackageReference section */
-		8CE8DBBA2E46E681006A9CB2 /* XCRemoteSwiftPackageReference "leap-ios" */ = {
+		8C2AADD02E4C741D00AE8768 /* XCRemoteSwiftPackageReference "leap-ios" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/Liquid4All/leap-ios.git";
 			requirement = {
@@ -618,9 +621,14 @@
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
-		8CE8DBBB2E46E681006A9CB2 /* LeapSDK */ = {
+		8C2AADD12E4C741D00AE8768 /* LeapModelDownloader */ = {
 			isa = XCSwiftPackageProductDependency;
-			package = 8CE8DBBA2E46E681006A9CB2 /* XCRemoteSwiftPackageReference "leap-ios" */;
+			package = 8C2AADD02E4C741D00AE8768 /* XCRemoteSwiftPackageReference "leap-ios" */;
+			productName = LeapModelDownloader;
+		};
+		8C2AADD32E4C741D00AE8768 /* LeapSDK */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 8C2AADD02E4C741D00AE8768 /* XCRemoteSwiftPackageReference "leap-ios" */;
 			productName = LeapSDK;
 		};
 /* End XCSwiftPackageProductDependency section */

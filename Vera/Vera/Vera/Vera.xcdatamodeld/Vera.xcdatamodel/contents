@@ -16,4 +16,18 @@
         <attribute name="tags" optional="YES" attributeType="String"/>
         <attribute name="timestamp" attributeType="Date" usesScalarValueType="NO"/>
     </entity>
+    <entity name="Meeting" representedClassName="Vera.Meeting" syncable="YES">
+        <attribute name="actionItems" optional="YES" attributeType="Binary"/>
+        <attribute name="audioFileURL" optional="YES" attributeType="String"/>
+        <attribute name="date" attributeType="Date" usesScalarValueType="NO"/>
+        <attribute name="duration" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
+        <attribute name="enhancedNotes" optional="YES" attributeType="String"/>
+        <attribute name="id" attributeType="UUID" usesScalarValueType="NO"/>
+        <attribute name="keyDecisions" optional="YES" attributeType="Binary"/>
+        <attribute name="questions" optional="YES" attributeType="Binary"/>
+        <attribute name="rawNotes" optional="YES" attributeType="String"/>
+        <attribute name="templateUsed" optional="YES" attributeType="String"/>
+        <attribute name="title" attributeType="String"/>
+        <attribute name="transcript" optional="YES" attributeType="String"/>
+    </entity>
 </model>
