@@ -11,32 +11,51 @@ import CoreData
 struct ContentView: View {
     @State private var selectedTab = 0
     @EnvironmentObject var csvProcessor: CSVProcessor
+    @EnvironmentObject var lfm2Manager: LFM2Manager
     
     var body: some View {
         ZStack {
             Color.veraWhite.ignoresSafeArea()
             
-            VStack(spacing: 0) {
-                ZStack {
-                    TransactionsView()
-                        .opacity(selectedTab == 0 ? 1 : 0)
-                        .environmentObject(csvProcessor)
+            if !lfm2Manager.isModelInitialized {
+                // Show loading screen while model initializes
+                VStack(spacing: 20) {
+                    ProgressView()
+                        .scaleEffect(1.5)
+                        .tint(.veraLightGreen)
                     
-                    InsightsView()
-                        .opacity(selectedTab == 1 ? 1 : 0)
-                        .environmentObject(csvProcessor)
+                    Text("Initializing AI Model...")
+                        .font(.veraBody())
+                        .foregroundColor(.black)
                     
-                    BudgetView()
-                        .opacity(selectedTab == 2 ? 1 : 0)
-                        .environmentObject(csvProcessor)
+                    Text("This may take a moment on first launch")
+                        .font(.veraCaption())
+                        .foregroundColor(.black.opacity(0.6))
                 }
-                .frame(maxHeight: .infinity)
-                
-                VBottomNav(selectedTab: $selectedTab, tabs: [
-                    (icon: "transaction", label: "Transactions"),
-                    (icon: "insights", label: "Insights"),
-                    (icon: "budget", label: "Budget")
-                ])
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+            } else {
+                VStack(spacing: 0) {
+                    ZStack {
+                        TransactionsView()
+                            .opacity(selectedTab == 0 ? 1 : 0)
+                            .environmentObject(csvProcessor)
+                        
+                        InsightsView()
+                            .opacity(selectedTab == 1 ? 1 : 0)
+                            .environmentObject(csvProcessor)
+                        
+                        BudgetView()
+                            .opacity(selectedTab == 2 ? 1 : 0)
+                            .environmentObject(csvProcessor)
+                    }
+                    .frame(maxHeight: .infinity)
+                    
+                    VBottomNav(selectedTab: $selectedTab, tabs: [
+                        (icon: "transaction", label: "Transactions"),
+                        (icon: "insights", label: "Insights"),
+                        (icon: "budget", label: "Budget")
+                    ])
+                }
             }
         }
     }

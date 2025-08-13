@@ -16,6 +16,7 @@ class PromptManager {
         case budgetNegotiator = "BudgetNegotiator"
         case budgetInsights = "BudgetInsights"
         case transactionDeduplicator = "TransactionDeduplicator"
+        case budgetChat = "BudgetChat"
         
         var fileName: String {
             return "\(rawValue).prompt"
@@ -98,6 +99,27 @@ class PromptManager {
             return "Provide budget insights for: {{budget_data}}"
         case .transactionDeduplicator:
             return "Find duplicate transactions in: {{transactions}}"
+        case .budgetChat:
+            return """
+            You are a personal finance advisor helping users manage their budget. Analyze their spending and provide specific, actionable advice.
+            
+            Current spending breakdown:
+            {spending_data}
+            
+            Previous conversation:
+            {conversation_history}
+            
+            User message: {user_message}
+            
+            Provide a helpful response that:
+            1. Addresses the user's question directly
+            2. Points out any concerning spending patterns with specific amounts
+            3. Suggests 2-3 practical ways to improve their budget
+            
+            Be conversational but honest about problem areas. Focus on the highest impact changes they could make.
+            
+            Response:
+            """
         }
     }
     

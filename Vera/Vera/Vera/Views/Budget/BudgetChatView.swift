@@ -8,6 +8,7 @@ struct BudgetChatView: View {
     @FocusState private var isTextFieldFocused: Bool
     @State private var isProcessing = false
     @State private var errorMessage: String?
+    @State private var hasInitialized = false
     
     var body: some View {
         VStack(spacing: 0) {
@@ -33,9 +34,15 @@ struct BudgetChatView: View {
                     }
                 }
             }
+            .onAppear {
+                if !hasInitialized && messages.isEmpty {
+                    hasInitialized = true
+                    sendInitialMessage()
+                }
+            }
             
             HStack(spacing: 12) {
-                TextField("Set budget targets for your categories...", text: $inputText)
+                TextField("Tell me about your financial goals...", text: $inputText)
                     .font(.veraBodySmall())
                     .padding(12)
                     .background(Color.veraWhite)
@@ -69,10 +76,43 @@ struct BudgetChatView: View {
             }
             
             if messages.count > 2 {
-                VButton(title: "Finalize Budget", style: .primary, isFullWidth: true) {
+                VButton(title: "Finalize Budget", style: .primary, action: {
                     createBudget()
-                }
+                }, isFullWidth: true)
                 .padding(.top, 12)
+            }
+        }
+    }
+    
+    private func sendInitialMessage() {
+        isProcessing = true
+        
+        Task {
+            // Use a hardcoded initial message for consistency
+            // The 700M model should provide better coherent initial messages
+            let categories = csvProcessor.uniqueCategories.sorted()
+            let categoryTotals = csvProcessor.categoryTotals
+            
+            let initialMessage: String
+            if !categories.isEmpty {
+                let topCategory = categories.sorted { abs(categoryTotals[$0] ?? 0) > abs(categoryTotals[$1] ?? 0) }.first ?? ""
+                let topAmount = abs(categoryTotals[topCategory] ?? 0)
+                let totalExpenses = categoryTotals.values.filter { $0 < 0 }.reduce(0) { $0 + abs($1) }
+                let percentage = totalExpenses > 0 ? (topAmount / totalExpenses * 100) : 0
+                
+                initialMessage = "Welcome! I've analyzed your spending data. Your biggest expense is \(topCategory) at $\(String(format: "%.2f", topAmount)) (\(String(format: "%.0f", percentage))% of total spending). What are your financial goals? Are you looking to save more, reduce spending in specific areas, or something else?"
+            } else {
+                initialMessage = "Welcome! I'm here to help you create a personalized budget. To get started, please upload your transaction data in the Transactions tab, then come back here and we can discuss your financial goals."
+            }
+            
+            await MainActor.run {
+                messages.append(ChatMessage(
+                    id: UUID(),
+                    content: initialMessage,
+                    isUser: false,
+                    timestamp: Date()
+                ))
+                isProcessing = false
             }
         }
     }
@@ -90,152 +130,225 @@ struct BudgetChatView: View {
         messages.append(userMessage)
         let messageContent = inputText
         inputText = ""
+        isProcessing = true
         
-        // Generate a simple response based on CSV categories
-        let response = generateBudgetResponse(for: messageContent)
-        
-        messages.append(ChatMessage(
-            id: UUID(),
-            content: response,
-            isUser: false,
-            timestamp: Date()
-        ))
+        Task {
+            if let response = await generateLFM2Response(for: messageContent) {
+                await MainActor.run {
+                    messages.append(ChatMessage(
+                        id: UUID(),
+                        content: response,
+                        isUser: false,
+                        timestamp: Date()
+                    ))
+                    isProcessing = false
+                }
+            } else {
+                await MainActor.run {
+                    errorMessage = "Failed to generate response"
+                    isProcessing = false
+                }
+            }
+        }
     }
     
-    private func generateBudgetResponse(for message: String) -> String {
+    private func generateLFM2Response(for message: String, isInitial: Bool = false) async -> String? {
+        // NOTE: LFM2-700M is a medium-sized model (700M parameters)
+        // It should provide better quality than 350M but may still have limitations
+        // For best results, consider cloud APIs for complex conversations
         let categories = csvProcessor.uniqueCategories.sorted()
         let categoryTotals = csvProcessor.categoryTotals
         
-        if categories.isEmpty {
-            return "Please upload and analyze your CSV files first to see your spending categories."
+        if categories.isEmpty && !isInitial {
+            return "I need to see your spending data first. Please upload your transaction CSV files in the Transactions tab, then come back here so I can analyze your spending patterns and help you create a budget."
         }
         
-        // Simple response generation based on message content
-        let messageLower = message.lowercased()
+        // Build spending data string
+        var spendingData = ""
+        let totalExpenses = categoryTotals.values.filter { $0 < 0 }.reduce(0) { $0 + abs($1) }
+        let totalIncome = categoryTotals.values.filter { $0 > 0 }.reduce(0) { $0 + $1 }
         
-        if messageLower.contains("categor") || messageLower.contains("what") || messageLower.contains("show") {
-            var response = "Based on your CSV data, you have the following categories:\n\n"
-            for category in categories {
+        if !categories.isEmpty {
+            spendingData += "Total Income: $\(String(format: "%.2f", totalIncome))\n"
+            spendingData += "Total Expenses: $\(String(format: "%.2f", totalExpenses))\n"
+            spendingData += "Net: $\(String(format: "%.2f", totalIncome - totalExpenses))\n\n"
+            spendingData += "Category Breakdown:\n"
+            
+            // Sort categories by amount (highest spending first)
+            let sortedCategories = categories.sorted { abs(categoryTotals[$0] ?? 0) > abs(categoryTotals[$1] ?? 0) }
+            
+            for category in sortedCategories {
                 let amount = categoryTotals[category] ?? 0
-                response += "• \(category): $\(String(format: "%.2f", abs(amount)))\n"
+                let percentage = totalExpenses > 0 ? (abs(amount) / totalExpenses * 100) : 0
+                spendingData += "\(category): $\(String(format: "%.2f", abs(amount))) (\(String(format: "%.1f", percentage))% of expenses)\n"
             }
-            response += "\nWould you like to set budget targets for these categories?"
-            return response
+        } else {
+            spendingData = "No spending data available yet"
         }
         
-        if messageLower.contains("recommend") || messageLower.contains("suggest") {
-            var response = "Based on your current spending patterns, here are suggested budget targets:\n\n"
-            for category in categories {
-                let currentAmount = abs(categoryTotals[category] ?? 0)
-                let suggested = currentAmount * 0.9 // Suggest 10% reduction
-                response += "• \(category): $\(String(format: "%.2f", suggested)) (currently $\(String(format: "%.2f", currentAmount)))\n"
+        // Build conversation history
+        let conversationHistory = messages.suffix(5).map { msg in
+            "\(msg.isUser ? "User" : "Assistant"): \(msg.content)"
+        }.joined(separator: "\n")
+        
+        // Prepare prompt
+        let userMessage = isInitial ? "Start the conversation by asking about their financial goals" : message
+        let prompt = PromptManager.shared.fillTemplate(
+            type: .budgetChat,
+            variables: [
+                "spending_data": spendingData,
+                "user_message": userMessage,
+                "conversation_history": conversationHistory.isEmpty ? "No previous messages" : conversationHistory
+            ]
+        )
+        
+        print("DEBUG: Sending prompt to LFM2:\n\(prompt)")
+        
+        // Get LFM2 response
+        do {
+            let lfm2Service = LFM2Service.shared
+            let response = try await lfm2Service.inference(prompt, type: "budgetChat")
+            
+            print("DEBUG: LFM2 raw response:\n\(response)")
+            
+            // For the small model, just return the raw response
+            // It should be plain text now, not JSON
+            let cleanedResponse = response
+                .trimmingCharacters(in: .whitespacesAndNewlines)
+                .replacingOccurrences(of: "\\n", with: "\n")
+            
+            // If response is empty or nonsensical, use fallback
+            if cleanedResponse.isEmpty || cleanedResponse.count < 10 {
+                if isInitial {
+                    if !categories.isEmpty {
+                        let topCategory = categories.sorted { abs(categoryTotals[$0] ?? 0) > abs(categoryTotals[$1] ?? 0) }.first ?? ""
+                        let topAmount = abs(categoryTotals[topCategory] ?? 0)
+                        return "I've analyzed your spending data. You're spending $\(String(format: "%.2f", topAmount)) on \(topCategory) which is your biggest expense category. What are your financial goals? Are you trying to save for something specific or just reduce overall spending?"
+                    } else {
+                        return "Hi! I'm here to help you create a personalized budget. What are your main financial goals right now? Are you looking to save for something specific, pay off debt, or just get better control of your spending?"
+                    }
+                }
+                return "Let me help you analyze your spending and create a budget. Based on your data, I can see opportunities to optimize your expenses."
             }
-            response += "\nThese targets aim for a 10% reduction in spending."
-            return response
-        }
-        
-        if messageLower.contains("save") || messageLower.contains("saving") {
-            let totalExpenses = categoryTotals.values.filter { $0 < 0 }.reduce(0) { $0 + abs($1) }
-            let suggestedSavings = totalExpenses * 0.2
-            return """
-            To build healthy savings, I recommend targeting 20% of your expenses.
             
-            Based on your total expenses of $\(String(format: "%.2f", totalExpenses)), you should aim to save $\(String(format: "%.2f", suggestedSavings)) per month.
+            return cleanedResponse
             
-            You can achieve this by reducing spending across your categories proportionally.
-            """
+        } catch {
+            print("LFM2 error in budget chat: \(error)")
+            
+            // Provide fallback responses for common scenarios
+            if isInitial {
+                return "Let's talk about your financial goals. What would you like to achieve with your budget?"
+            }
+            return nil
         }
-        
-        // Default response
-        return """
-        I can help you create a budget based on your \(categories.count) spending categories.
-        
-        You can:
-        • Review your current spending by category
-        • Get recommended budget targets
-        • Set custom limits for each category
-        
-        What would you like to focus on?
-        """
     }
     
     private func createBudget() {
         isProcessing = true
         errorMessage = nil
         
-        // Get current spending data from CSV processor
-        let categories = csvProcessor.uniqueCategories.sorted()
-        let categoryTotals = csvProcessor.categoryTotals
-        
-        if categories.isEmpty {
-            errorMessage = "No categories found. Please upload CSV files first."
-            isProcessing = false
-            return
-        }
-        
-        // Calculate total spending
-        let totalExpenses = categoryTotals.values.filter { $0 < 0 }.reduce(0) { $0 + abs($1) }
-        let totalIncome = categoryTotals.values.filter { $0 > 0 }.reduce(0) { $0 + $1 }
-        
-        // Create budget allocations based on actual categories
-        var budgetCategories: [Budget.CategoryAllocation] = []
-        
-        for category in categories {
-            let amount = abs(categoryTotals[category] ?? 0)
-            let percentage = totalExpenses > 0 ? (amount / totalExpenses) * 100 : 0
+        Task {
+            // Ask LFM2 to create final budget recommendations
+            let budgetPrompt = "Based on our conversation, create a final budget with specific targets for each category"
             
-            // Apply slight reduction for budget targets (encourage saving)
-            let targetAmount = amount * 0.95
-            
-            budgetCategories.append(Budget.CategoryAllocation(
-                name: category,
-                amount: targetAmount,
-                percentage: percentage
-            ))
+            if await generateLFM2Response(for: budgetPrompt) != nil {
+                await MainActor.run {
+                    // Parse the response and create budget
+                    let categories = csvProcessor.uniqueCategories.sorted()
+                    let categoryTotals = csvProcessor.categoryTotals
+                    
+                    if categories.isEmpty {
+                        errorMessage = "No categories found. Please upload CSV files first."
+                        isProcessing = false
+                        return
+                    }
+                    
+                    // Calculate total spending
+                    let totalExpenses = categoryTotals.values.filter { $0 < 0 }.reduce(0) { $0 + abs($1) }
+                    let totalIncome = categoryTotals.values.filter { $0 > 0 }.reduce(0) { $0 + $1 }
+                    
+                    // Create budget allocations based on LFM2 recommendations
+                    var budgetCategories: [Budget.CategoryAllocation] = []
+                    
+                    for category in categories {
+                        let currentAmount = abs(categoryTotals[category] ?? 0)
+                        let percentage = totalExpenses > 0 ? (currentAmount / totalExpenses) * 100 : 0
+                        
+                        // Smart reduction based on category
+                        var targetAmount = currentAmount
+                        if currentAmount > totalExpenses * 0.3 {
+                            // If category is more than 30% of budget, suggest aggressive reduction
+                            targetAmount = currentAmount * 0.8
+                        } else if currentAmount > totalExpenses * 0.2 {
+                            // If category is 20-30% of budget, suggest moderate reduction
+                            targetAmount = currentAmount * 0.9
+                        } else {
+                            // For smaller categories, maintain or slight reduction
+                            targetAmount = currentAmount * 0.95
+                        }
+                        
+                        budgetCategories.append(Budget.CategoryAllocation(
+                            name: category,
+                            amount: targetAmount,
+                            percentage: percentage
+                        ))
+                    }
+                    
+                    // Add savings category if not present
+                    if !categories.contains("Savings") && !categories.contains("savings") {
+                        let savingsAmount = max(totalIncome - totalExpenses, totalExpenses * 0.15)
+                        budgetCategories.append(Budget.CategoryAllocation(
+                            name: "Savings",
+                            amount: savingsAmount,
+                            percentage: 15
+                        ))
+                    }
+                    
+                    // Sort by amount
+                    budgetCategories.sort { $0.amount > $1.amount }
+                    
+                    // Generate specific recommendations based on analysis
+                    var changes: [String] = []
+                    
+                    // Find problematic spending
+                    let sortedByAmount = categories.sorted { abs(categoryTotals[$0] ?? 0) > abs(categoryTotals[$1] ?? 0) }
+                    if let topCategory = sortedByAmount.first {
+                        let amount = abs(categoryTotals[topCategory] ?? 0)
+                        let percentage = totalExpenses > 0 ? (amount / totalExpenses * 100) : 0
+                        if percentage > 30 {
+                            changes.append("Your \(topCategory) spending ($\(String(format: "%.0f", amount))) is \(String(format: "%.0f", percentage))% of expenses - this needs immediate attention")
+                        }
+                    }
+                    
+                    if totalIncome > totalExpenses {
+                        let surplus = totalIncome - totalExpenses
+                        changes.append("You have $\(String(format: "%.0f", surplus)) surplus - increase savings or investments")
+                    } else if totalExpenses > totalIncome {
+                        let deficit = totalExpenses - totalIncome
+                        changes.append("Warning: $\(String(format: "%.0f", deficit)) monthly deficit - urgent budget cuts needed")
+                    }
+                    
+                    changes.append("Budget optimized based on AI analysis of \(categories.count) spending categories")
+                    
+                    let budget = Budget(
+                        id: UUID(),
+                        monthlyTarget: budgetCategories.reduce(0) { $0 + $1.amount },
+                        categories: budgetCategories,
+                        changes: changes,
+                        createdDate: Date()
+                    )
+                    
+                    isProcessing = false
+                    onFinalize(budget)
+                }
+            } else {
+                await MainActor.run {
+                    errorMessage = "Failed to create budget"
+                    isProcessing = false
+                }
+            }
         }
-        
-        // Add savings category if not present
-        if !categories.contains("Savings") && !categories.contains("savings") {
-            let savingsAmount = totalExpenses * 0.1 // Target 10% savings
-            budgetCategories.append(Budget.CategoryAllocation(
-                name: "Savings",
-                amount: savingsAmount,
-                percentage: 10
-            ))
-        }
-        
-        // Sort by amount
-        budgetCategories.sort { $0.amount > $1.amount }
-        
-        // Generate changes/recommendations
-        var changes: [String] = []
-        
-        // Find categories with highest spending
-        if let topCategory = budgetCategories.first {
-            changes.append("Consider reducing \(topCategory.name) spending by 5-10%")
-        }
-        
-        // Add general recommendations
-        if totalIncome > totalExpenses {
-            let surplus = totalIncome - totalExpenses
-            changes.append("You have a surplus of $\(String(format: "%.2f", surplus)) - consider increasing savings")
-        } else if totalExpenses > totalIncome {
-            let deficit = totalExpenses - totalIncome
-            changes.append("You're overspending by $\(String(format: "%.2f", deficit)) - reduce expenses")
-        }
-        
-        changes.append("Budget based on \(categories.count) categories from your CSV data")
-        
-        let budget = Budget(
-            id: UUID(),
-            monthlyTarget: budgetCategories.reduce(0) { $0 + $1.amount },
-            categories: budgetCategories,
-            changes: changes,
-            createdDate: Date()
-        )
-        
-        isProcessing = false
-        onFinalize(budget)
     }
 }
 

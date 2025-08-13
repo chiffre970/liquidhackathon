@@ -7,9 +7,9 @@ import LeapSDKTypes
 
 @available(iOS 15.0, *)
 class LEAPSDKManager {
-    // Using only the 350M model for mobile efficiency
-    private let modelFileName = "LFM2-350M-8da4w_output_8da8w-seq_4096"
-    private let modelDisplayName = "LFM2-350M"
+    // Using the 700M model for better quality while maintaining mobile efficiency
+    private let modelFileName = "LFM2-700M-8da4w_output_8da8w-seq_4096"
+    private let modelDisplayName = "LFM2-700M"
     
     private var modelRunner: LeapSDK.ModelRunner?
     private var conversation: LeapSDK.Conversation?
@@ -20,7 +20,7 @@ class LEAPSDKManager {
     
     private init() {}
     
-    // Initialize the 350M model
+    // Initialize the 700M model
     func initialize() async throws {
         // Check if model is already loaded
         if isModelLoaded, modelRunner != nil {
@@ -208,8 +208,9 @@ class LEAPSDKManager {
                         break
                     }
                 
-                // Check for stop sequences
-                if generatedText.contains("\n\n") || generatedText.contains("END") {
+                // Don't stop on double newlines - let the model complete its response
+                // Only stop on explicit END marker if needed
+                if generatedText.contains("<|END|>") {
                     break
                 }
                 
@@ -226,10 +227,8 @@ class LEAPSDKManager {
             print("Error generating response: \(error)")
         }
         
-        // Clean up the response
-        if let stopIndex = generatedText.range(of: "\n\n") {
-            generatedText = String(generatedText[..<stopIndex.lowerBound])
-        } else if let endIndex = generatedText.range(of: "END") {
+        // Clean up the response - only remove explicit stop tokens
+        if let endIndex = generatedText.range(of: "<|END|>") {
             generatedText = String(generatedText[..<endIndex.lowerBound])
         }
         
@@ -264,8 +263,8 @@ class LEAPSDKManager {
                                 return
                             }
                             
-                            // Check stop sequences
-                            if text.contains("\n\n") || text.contains("END") {
+                            // Check for explicit stop token only
+                            if text.contains("<|END|>") {
                                 continuation.finish()
                                 return
                             }

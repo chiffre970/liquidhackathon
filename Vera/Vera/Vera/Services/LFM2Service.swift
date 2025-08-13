@@ -25,13 +25,13 @@ class LFM2Service {
     }
     
     private func initializeModel() async {
-        logger.info("Initializing LFM2-350M model")
+        logger.info("Initializing LFM2-700M model")
         let startTime = logger.startTimer("Model Initialization")
         
         do {
             try await leapSDK.initialize()
             logger.endTimer("Model Initialization", start: startTime)
-            logger.success("LFM2-350M model initialized successfully")
+            logger.success("LFM2-700M model initialized successfully")
         } catch {
             logger.error("Failed to initialize LFM2 model: \(error)")
             // Don't fatal error - allow app to handle the error
@@ -44,7 +44,7 @@ class LFM2Service {
         return leapSDK.isModelReady()
     }
     
-    // Model switching is no longer supported - using only 350M model
+    // Model switching is no longer supported - using only 700M model
     
     // MARK: - Core Inference
     

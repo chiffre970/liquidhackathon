@@ -46,6 +46,10 @@ struct VeraApp: App {
                     transaction.animation = nil
                     transaction.disablesAnimations = true
                 }
+                .task {
+                    // Initialize LFM2 model when app starts
+                    await lfm2Manager.initialize()
+                }
         }
     }
 }

@@ -460,40 +460,43 @@ class CSVProcessor: ObservableObject {
     private func removeDuplicatesAndTransfers(from transactions: [ExtractedTransaction]) -> [ExtractedTransaction] {
         var seen = Set<String>()
         var unique: [ExtractedTransaction] = []
-        var potentialTransfers: [(ExtractedTransaction, Int)] = []
         
-        // First pass: collect all transactions and mark potential transfers
-        for (index, transaction) in transactions.enumerated() {
+        // First pass: remove exact duplicates
+        for transaction in transactions {
             let key = "\(transaction.date)|\(transaction.amount)|\(transaction.merchant)"
             
             if !seen.contains(key) {
                 seen.insert(key)
                 unique.append(transaction)
-                
-                // Check if this might be a transfer
-                let merchantLower = transaction.merchant.lowercased()
-                if merchantLower.contains("transfer") || 
-                   merchantLower.contains("savings") ||
-                   merchantLower.contains("checking") ||
-                   merchantLower.contains("account") {
-                    potentialTransfers.append((transaction, unique.count - 1))
-                }
             }
         }
         
-        // Second pass: remove matching transfers (opposite amounts on same date)
+        // Second pass: remove internal transfers
+        // Look for pairs with same date, same category, and opposite amounts
         var indicesToRemove = Set<Int>()
-        for i in 0..<potentialTransfers.count {
-            for j in (i+1)..<potentialTransfers.count {
-                let trans1 = potentialTransfers[i].0
-                let trans2 = potentialTransfers[j].0
+        
+        for i in 0..<unique.count {
+            // Skip if already marked for removal
+            if indicesToRemove.contains(i) { continue }
+            
+            for j in (i+1)..<unique.count {
+                // Skip if already marked for removal
+                if indicesToRemove.contains(j) { continue }
                 
-                // Check if they're matching transfers (same date, opposite amounts)
+                let trans1 = unique[i]
+                let trans2 = unique[j]
+                
+                // Check if they're matching transfers:
+                // - Same date
+                // - Same category
+                // - Opposite amounts (one positive, one negative, same absolute value)
                 if trans1.date == trans2.date && 
-                   abs(trans1.amount + trans2.amount) < 0.01 { // Opposite amounts
-                    indicesToRemove.insert(potentialTransfers[i].1)
-                    indicesToRemove.insert(potentialTransfers[j].1)
-                    print("🔄 Removed transfer pair: \(trans1.merchant) ↔ \(trans2.merchant) for $\(abs(trans1.amount))")
+                   trans1.category == trans2.category &&
+                   abs(trans1.amount + trans2.amount) < 0.01 { // Opposite amounts with same absolute value
+                    indicesToRemove.insert(i)
+                    indicesToRemove.insert(j)
+                    print("🔄 DEDUP: Date=\(trans1.date), Category=\(trans1.category ?? "Unknown"), Amount1=$\(String(format: "%.2f", trans1.amount)), Amount2=$\(String(format: "%.2f", trans2.amount))")
+                    print("         \(trans1.merchant) ↔ \(trans2.merchant)")
                 }
             }
         }
@@ -507,7 +510,7 @@ class CSVProcessor: ObservableObject {
         print("   - Original: \(transactions.count)")
         print("   - After exact duplicates: \(unique.count)")
         print("   - After transfer removal: \(finalUnique.count)")
-        print("   - Transfers removed: \(indicesToRemove.count) transactions")
+        print("   - Internal transfers removed: \(indicesToRemove.count) transactions")
         
         return finalUnique
     }

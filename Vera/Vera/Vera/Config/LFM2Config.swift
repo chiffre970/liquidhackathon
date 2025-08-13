@@ -2,7 +2,7 @@ import Foundation
 
 struct LFM2Config {
     // Model Configuration
-    static let modelName = "lfm2-350M"  // Using only 350M model for mobile efficiency
+    static let modelName = "lfm2-700M"  // Using 700M model for better quality
     static let maxTokens = 512
     static let temperature = 0.6  // Lower for more consistent output
     static let topP = 0.85

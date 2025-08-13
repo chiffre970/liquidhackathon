@@ -8,6 +8,7 @@ class LFM2Manager: ObservableObject {
     @Published var isProcessing = false
     @Published var processingProgress: Double = 0.0
     @Published var currentOperation: String = ""
+    @Published var isModelInitialized = false
     
     private let lfm2Service = LFM2Service.shared
     private let promptManager = PromptManager.shared
@@ -22,7 +23,13 @@ class LFM2Manager: ObservableObject {
         // Initialize the LFM2 service and LEAP SDK
         logger.info("Initializing LFM2 service...")
         await lfm2Service.initialize()
-        logger.success("LFM2 service initialized")
+        
+        // Update the published property on main thread
+        await MainActor.run {
+            self.isModelInitialized = lfm2Service.isModelLoaded()
+        }
+        
+        logger.success("LFM2 service initialized: \(lfm2Service.isModelLoaded())")
     }
     
     struct ProcessedTransaction {
