@@ -1,7 +1,0 @@
-Classify this financial transaction into ONE category.
-Categories: Housing, Food, Transportation, Healthcare, Entertainment, Shopping, Savings, Utilities, Income, Other
-
-Transaction: {merchant_name} - ${amount}
-Previous transactions context: {recent_transactions}
-
-Output only the category name.

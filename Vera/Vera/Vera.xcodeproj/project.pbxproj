@@ -438,6 +438,9 @@
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Vera needs microphone access to record your thoughts and ideas for organization.";
+				INFOPLIST_KEY_NSSpeechRecognitionUsageDescription = "Vera transcribes your speech locally to organize your thoughts without sending data to any servers.";
+				INFOPLIST_KEY_NSUserNotificationsUsageDescription = "Vera sends reminders about your actions and insights from your recorded thoughts.";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -470,6 +473,9 @@
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Vera needs microphone access to record your thoughts and ideas for organization.";
+				INFOPLIST_KEY_NSSpeechRecognitionUsageDescription = "Vera transcribes your speech locally to organize your thoughts without sending data to any servers.";
+				INFOPLIST_KEY_NSUserNotificationsUsageDescription = "Vera sends reminders about your actions and insights from your recorded thoughts.";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",

@@ -1,54 +1,67 @@
-# Vera - Personal Finance Assistant
+# Vera - AI Thought Organizer
 
-A privacy-first personal finance management iOS app built with Liquid AI's LFM2 model for local, on-device transaction analysis and budgeting.
+An elegant iOS app that captures your spoken thoughts and intelligently organizes them using on-device AI.
 
-## Overview
+## Vision
 
-This app leverages Liquid AI's LEAP Devkit to provide completely local financial analysis without compromising user privacy. Users can import CSV transaction files, get AI-powered insights through categorization and spending analysis, and receive personalized budget recommendations.
+Vera transforms fleeting thoughts into organized, actionable insights. Simply tap the ethereal particle orb, speak your mind, and let the app transcribe and categorize your thoughts in the background using the powerful LFM2 700M model.
 
-## Key Features
+## Features
 
-- **Privacy-First**: 100% local processing using LFM2 - no data leaves your device
-- **Intelligent Categorization**: AI-powered transaction categorization from flexible CSV formats
-- **Visual Insights**: Sankey diagrams showing income flow and spending breakdown
-- **Smart Budgeting**: AI-assisted budget planning with goal-based recommendations
-- **Multi-File Support**: Import and merge multiple CSV files seamlessly
-
-## App Structure
-
-### Three Main Screens:
-1. **Transactions Page**: CSV import, view uploaded files, and browse categorized transactions
-2. **Insights Page**: Monthly cash flow visualization with Sankey diagrams and AI-powered spending analysis
-3. **Budget Page**: Interactive chat interface for budget negotiation and finalized budget summaries
+- **Effortless Capture**: Tap floating particles to start/stop recording
+- **Automatic Transcription**: Apple's Speech framework converts speech to text
+- **Intelligent Organization**: LFM2 categorizes thoughts as Actions or Ideas
+- **Smart Reminders**: Action items trigger task-based notifications, thoughts trigger content-based insights
+- **Beautiful Visualization**: Ethereal particle orb with pink/purple/blue/red fluid animations
+- **Complete Privacy**: All processing happens on-device, no cloud dependencies
 
 ## Technical Stack
 
-- **Platform**: iOS (Swift, SwiftUI)
-- **AI Model**: Liquid AI LFM2 (700M parameters, bundled locally)
-- **Data Storage**: Core Data for local persistence
-- **Visualization**: Custom Sankey diagram implementation
-- **CSV Processing**: Row-by-row processing with real-time progress
+- **Platform**: iOS 15.0+
+- **UI Framework**: SwiftUI
+- **AI Model**: LFM2 700M (via LEAP SDK)
+- **Speech**: Apple Speech Framework
+- **Audio**: AVFoundation
+- **Storage**: Core Data
+- **Notifications**: UserNotifications
 
-## Getting Started
+## Architecture
 
-### Prerequisites
-- iOS 15.0+ (iOS 17.6+ recommended)
-- Xcode 15.0+ with Swift 5.9+
-- 4GB+ RAM recommended for optimal model performance
+```
+Vera/
+├── Core/
+│   ├── Models/         # Thought, Session, Category
+│   ├── Services/       # Audio, Transcription, AI Processing
+│   └── Storage/        # Core Data persistence
+├── UI/
+│   ├── Particles/      # Orb visualization
+│   ├── Recording/      # Recording interface
+│   └── Library/        # Thought browsing (future)
+└── Resources/
+    └── LFM2/           # 700M model bundle
+```
 
-### Installation
-1. Clone the repository
-2. Open in Xcode
-3. The LEAP SDK and LFM2 model are bundled with the project
-4. Build and run on device (simulator performance may be limited)
+## Privacy First
 
-## Project Timeline
-- **Target**: 10 days development cycle
-- **Hackathon**: Liquid AI Hackathon submission
-- **App Name**: Vera - your personal finance assistant
+- No network requests for processing
+- All AI inference on-device
+- No analytics or tracking
+- Secure local storage only
 
-## Privacy & Security
-- All transaction data remains on device
-- No network requests for AI processing
-- Local Core Data storage only
-- No user tracking or analytics
+## Development
+
+Built for the Liquid AI Hackathon 2025
+
+### Requirements
+- Xcode 15+
+- iOS Device (for testing audio recording)
+- ~500MB free space for LFM2 model
+
+### Setup
+```bash
+xcodebuild -project Vera.xcodeproj -scheme Vera -sdk iphoneos
+```
+
+## Status
+
+🚧 Under active development for hackathon submission
