@@ -40,7 +40,7 @@ struct RecordingIndicatorView: View {
                 isAnimating = true
             }
         }
-        .onChange(of: isPaused) { oldValue, newValue in
+        .onChange(of: isPaused) { newValue in
             isAnimating = !newValue
         }
     }

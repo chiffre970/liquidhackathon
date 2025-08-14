@@ -3,16 +3,35 @@ import SwiftUI
 struct MeetingRowView: View {
     let meeting: Meeting
     
+    init(meeting: Meeting) {
+        self.meeting = meeting
+        print("🔵 [MeetingRowView] Initializing with meeting: ID=\(meeting.id.uuidString), Title=\(meeting.title)")
+    }
+    
     private var firstTwoLines: String {
-        let notes = meeting.rawNotes ?? meeting.transcript ?? ""
-        let lines = notes.components(separatedBy: .newlines)
+        // Prioritize transcript over notes for preview
+        let content = meeting.transcript ?? meeting.rawNotes ?? ""
+        let lines = content.components(separatedBy: .newlines)
             .filter { !$0.trimmingCharacters(in: .whitespaces).isEmpty }
             .prefix(2)
-        return lines.joined(separator: " ")
+        let preview = lines.joined(separator: " ")
+        
+        // Limit preview length
+        if preview.count > 100 {
+            return String(preview.prefix(100)) + "..."
+        }
+        return preview
     }
     
     private var actionItemCount: Int {
-        meeting.actionItemsArray.filter { !$0.isCompleted }.count
+        do {
+            let count = meeting.actionItemsArray.filter { !$0.isCompleted }.count
+            print("📊 [MeetingRowView] Action items count: \(count)")
+            return count
+        } catch {
+            print("❌ [MeetingRowView] Error getting action items: \(error)")
+            return 0
+        }
     }
     
     var body: some View {

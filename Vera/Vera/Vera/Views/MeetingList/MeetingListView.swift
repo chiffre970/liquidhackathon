@@ -4,30 +4,42 @@ import CoreData
 struct MeetingListView: View {
     @Environment(\.managedObjectContext) private var viewContext
     @FetchRequest(
-        entity: Meeting.entity(),
-        sortDescriptors: [NSSortDescriptor(keyPath: \Meeting.date, ascending: false)]
+        sortDescriptors: [NSSortDescriptor(keyPath: \Meeting.date, ascending: false)],
+        animation: .default
     ) private var meetings: FetchedResults<Meeting>
     
     @State private var searchText = ""
     @State private var showingDeleteAlert = false
     @State private var meetingToDelete: Meeting?
     
+    init() {
+        print("🔵 [MeetingListView] Initializing")
+    }
+    
     var filteredMeetings: [Meeting] {
+        print("🔍 [MeetingListView] Filtering meetings - total: \(meetings.count), search: '\(searchText)'")
+        
         if searchText.isEmpty {
             return Array(meetings)
         } else {
             return meetings.filter { meeting in
                 let searchLower = searchText.lowercased()
-                return meeting.title.lowercased().contains(searchLower) ||
-                       (meeting.rawNotes?.lowercased().contains(searchLower) ?? false) ||
-                       (meeting.transcript?.lowercased().contains(searchLower) ?? false) ||
-                       (meeting.enhancedNotes?.lowercased().contains(searchLower) ?? false)
+                
+                // Safe access to title with nil check
+                let titleMatch = (meeting.title ?? "").lowercased().contains(searchLower)
+                let notesMatch = (meeting.rawNotes?.lowercased().contains(searchLower) ?? false)
+                let transcriptMatch = (meeting.transcript?.lowercased().contains(searchLower) ?? false)
+                let enhancedNotesMatch = (meeting.enhancedNotes?.lowercased().contains(searchLower) ?? false)
+                
+                return titleMatch || notesMatch || transcriptMatch || enhancedNotesMatch
             }
         }
     }
     
     var body: some View {
-        NavigationView {
+        print("🔵 [MeetingListView] Rendering body - meetings count: \(meetings.count)")
+        
+        return NavigationView {
             VStack(spacing: 0) {
                 if !meetings.isEmpty {
                     MeetingSearchBar(searchText: $searchText)
@@ -46,11 +58,20 @@ struct MeetingListView: View {
             .navigationTitle("Meetings")
             .background(Color.gray.opacity(0.05))
         }
+        .onAppear {
+            print("✅ [MeetingListView] View appeared")
+            print("📊 [MeetingListView] Meetings count: \(meetings.count)")
+            for (index, meeting) in meetings.enumerated() {
+                print("  Meeting \(index): ID=\(meeting.id.uuidString), Title=\(meeting.title)")
+            }
+        }
         .alert("Delete Meeting?", isPresented: $showingDeleteAlert) {
             Button("Cancel", role: .cancel) { }
             Button("Delete", role: .destructive) {
                 if let meeting = meetingToDelete {
+                    print("🗑️ [MeetingListView] Delete button pressed for meeting: \(meeting.id.uuidString)")
                     deleteMeeting(meeting)
+                    meetingToDelete = nil
                 }
             }
         } message: {
@@ -97,15 +118,22 @@ struct MeetingListView: View {
     
     private var meetingsList: some View {
         List {
-            ForEach(filteredMeetings) { meeting in
-                NavigationLink(destination: MeetingDetailPlaceholder(meeting: meeting)) {
+            ForEach(filteredMeetings, id: \.id) { meeting in
+                NavigationLink(destination: MeetingDetailView(meeting: meeting)) {
                     MeetingRowView(meeting: meeting)
                 }
                 .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 8, trailing: 16))
                 .listRowSeparator(.hidden)
                 .listRowBackground(Color.clear)
+                .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+                    Button(role: .destructive) {
+                        print("🗑️ [MeetingListView] Swipe action delete for meeting: \(meeting.id.uuidString)")
+                        deleteMeeting(meeting)
+                    } label: {
+                        Label("Delete", systemImage: "trash")
+                    }
+                }
             }
-            .onDelete(perform: deleteFromList)
         }
         .listStyle(PlainListStyle())
         .refreshable {
@@ -114,26 +142,61 @@ struct MeetingListView: View {
     }
     
     private func deleteFromList(at offsets: IndexSet) {
+        print("🗑️ [MeetingListView] Swipe delete triggered")
+        
+        // For swipe-to-delete, delete immediately without alert
         for index in offsets {
-            let meeting = filteredMeetings[index]
-            meetingToDelete = meeting
-            showingDeleteAlert = true
+            if index < filteredMeetings.count {
+                let meeting = filteredMeetings[index]
+                print("🗑️ [MeetingListView] Deleting meeting at index \(index): \(meeting.id.uuidString)")
+                deleteMeeting(meeting)
+            }
         }
     }
     
     private func deleteMeeting(_ meeting: Meeting) {
-        withAnimation {
-            if let audioURLString = meeting.audioFileURL,
-               let audioURL = URL(string: audioURLString) {
-                try? FileManager.default.removeItem(at: audioURL)
+        Task { @MainActor in
+            print("🗑️ [MeetingListView] Deleting meeting: \(meeting.id.uuidString)")
+            
+            // Delete audio file if it exists (do this in background)
+            if let audioURLString = meeting.audioFileURL {
+                Task.detached {
+                    print("🎵 [MeetingListView] Audio URL string: \(audioURLString)")
+                    
+                    // Try to create URL from string - might be a file path instead of URL
+                    var audioURL: URL?
+                    if audioURLString.starts(with: "/") {
+                        // It's a file path
+                        audioURL = URL(fileURLWithPath: audioURLString)
+                    } else {
+                        // It's a URL string
+                        audioURL = URL(string: audioURLString)
+                    }
+                    
+                    if let url = audioURL {
+                        print("📁 [MeetingListView] Attempting to delete audio file at: \(url.path)")
+                        if FileManager.default.fileExists(atPath: url.path) {
+                            do {
+                                try FileManager.default.removeItem(at: url)
+                                print("✅ [MeetingListView] Audio file deleted")
+                            } catch {
+                                print("❌ [MeetingListView] Failed to delete audio file: \(error)")
+                            }
+                        } else {
+                            print("⚠️ [MeetingListView] Audio file doesn't exist at path")
+                        }
+                    }
+                }
             }
             
+            // Delete from Core Data on main thread
             viewContext.delete(meeting)
             
             do {
                 try viewContext.save()
+                print("✅ [MeetingListView] Meeting deleted from Core Data")
             } catch {
-                print("Failed to delete meeting: \(error)")
+                print("❌ [MeetingListView] Failed to delete meeting from Core Data: \(error)")
             }
         }
     }
@@ -151,6 +214,11 @@ struct MeetingListView: View {
 
 struct MeetingDetailPlaceholder: View {
     let meeting: Meeting
+    
+    init(meeting: Meeting) {
+        self.meeting = meeting
+        print("🔵 [MeetingDetailPlaceholder] Initializing with meeting: ID=\(meeting.id.uuidString)")
+    }
     
     var body: some View {
         ScrollView {

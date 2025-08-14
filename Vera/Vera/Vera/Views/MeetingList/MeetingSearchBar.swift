@@ -10,7 +10,7 @@ struct MeetingSearchBar: View {
                 Image(systemName: "magnifyingglass")
                     .foregroundColor(.gray)
                 
-                TextField("Search meetings...", text: $searchText)
+                TextField("Search meetings, transcripts, notes...", text: $searchText)
                     .focused($isFocused)
                     .submitLabel(.search)
                     .onSubmit {

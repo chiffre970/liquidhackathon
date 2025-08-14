@@ -5,16 +5,13 @@ import CoreData
 class BackgroundProcessor: ObservableObject {
     static let shared = BackgroundProcessor()
     
-    private let persistentContainer: NSPersistentContainer
+    private var persistentContainer: NSPersistentContainer {
+        PersistenceController.shared.container
+    }
     private var currentSession: Session?
     
-    init() {
-        persistentContainer = NSPersistentContainer(name: "Vera")
-        persistentContainer.loadPersistentStores { _, error in
-            if let error = error {
-                print("Core Data failed to load: \(error)")
-            }
-        }
+    private init() {
+        // Use the shared PersistenceController instead of creating a new container
     }
     
     func processThought(transcription: String, audioURL: URL) async {

@@ -18,25 +18,34 @@ class AudioRecorder: NSObject, ObservableObject {
     }
     
     private func setupAudioSession() {
+        print("🎵 [AudioRecorder] Setting up audio session")
         audioSession = AVAudioSession.sharedInstance()
         
         do {
             try audioSession?.setCategory(.playAndRecord, mode: .default)
             try audioSession?.setActive(true)
+            print("✅ [AudioRecorder] Audio session configured")
             
             AVAudioApplication.requestRecordPermission { [weak self] allowed in
-                if !allowed {
+                if allowed {
+                    print("✅ [AudioRecorder] Microphone permission granted")
+                } else {
+                    print("❌ [AudioRecorder] Microphone permission denied")
                     self?.error = RecordingError.permissionDenied
                 }
             }
         } catch {
             self.error = error
+            print("❌ [AudioRecorder] Failed to setup audio session: \(error.localizedDescription)")
         }
     }
     
     func startRecording() {
+        print("🎤 [AudioRecorder] startRecording called")
+        
         let documentsPath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
         let audioFilename = documentsPath.appendingPathComponent("recording_\(Date().timeIntervalSince1970).m4a")
+        print("📁 [AudioRecorder] Recording to: \(audioFilename.lastPathComponent)")
         
         let settings: [String: Any] = [
             AVFormatIDKey: Int(kAudioFormatMPEG4AAC),
@@ -44,12 +53,15 @@ class AudioRecorder: NSObject, ObservableObject {
             AVNumberOfChannelsKey: 1,
             AVEncoderAudioQualityKey: AVAudioQuality.high.rawValue
         ]
+        print("⚙️ [AudioRecorder] Audio settings: 44.1kHz, Mono, AAC High Quality")
         
         do {
             audioRecorder = try AVAudioRecorder(url: audioFilename, settings: settings)
             audioRecorder?.delegate = self
             audioRecorder?.isMeteringEnabled = true
-            audioRecorder?.record()
+            
+            let success = audioRecorder?.record() ?? false
+            print(success ? "✅ [AudioRecorder] Recording started successfully" : "❌ [AudioRecorder] Failed to start recording")
             
             isRecording = true
             recordingTime = 0
@@ -61,15 +73,26 @@ class AudioRecorder: NSObject, ObservableObject {
             levelTimer = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { [weak self] _ in
                 self?.updateAudioLevel()
             }
+            
+            print("⏰ [AudioRecorder] Timers started")
         } catch {
             self.error = error
+            print("❌ [AudioRecorder] Failed to create recorder: \(error.localizedDescription)")
         }
     }
     
     func stopRecording() -> URL? {
-        guard let recorder = audioRecorder else { return nil }
+        print("🛑 [AudioRecorder] stopRecording called")
+        
+        guard let recorder = audioRecorder else { 
+            print("⚠️ [AudioRecorder] No active recorder")
+            return nil 
+        }
         
         let url = recorder.url
+        print("📁 [AudioRecorder] Stopping recording: \(url.lastPathComponent)")
+        print("⏱️ [AudioRecorder] Recording duration: \(recordingTime) seconds")
+        
         recorder.stop()
         audioRecorder = nil
         
@@ -79,6 +102,19 @@ class AudioRecorder: NSObject, ObservableObject {
         levelTimer?.invalidate()
         levelTimer = nil
         audioLevel = 0
+        
+        // Check if file exists
+        if FileManager.default.fileExists(atPath: url.path) {
+            do {
+                let attributes = try FileManager.default.attributesOfItem(atPath: url.path)
+                let fileSize = attributes[.size] as? Int64 ?? 0
+                print("✅ [AudioRecorder] Audio file saved: \(fileSize) bytes")
+            } catch {
+                print("⚠️ [AudioRecorder] Could not get file size: \(error)")
+            }
+        } else {
+            print("❌ [AudioRecorder] Audio file not found at path")
+        }
         
         return url
     }
@@ -98,8 +134,10 @@ class AudioRecorder: NSObject, ObservableObject {
 
 extension AudioRecorder: AVAudioRecorderDelegate {
     func audioRecorderDidFinishRecording(_ recorder: AVAudioRecorder, successfully flag: Bool) {
+        print("🎤 [AudioRecorder] Recording finished - Success: \(flag)")
         if !flag {
             error = RecordingError.recordingFailed
+            print("❌ [AudioRecorder] Recording failed")
         }
     }
 }

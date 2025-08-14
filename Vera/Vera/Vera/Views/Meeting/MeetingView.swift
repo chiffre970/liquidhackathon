@@ -2,7 +2,7 @@ import SwiftUI
 import CoreData
 
 struct MeetingView: View {
-    @StateObject private var recordingService = MeetingRecordingService()
+    @StateObject private var recordingService: MeetingRecordingService
     @State private var userNotes: String = ""
     @State private var showTemplates = false
     @State private var selectedTemplate: String?
@@ -12,6 +12,11 @@ struct MeetingView: View {
     @FocusState private var isNotesFocused: Bool
     
     @Environment(\.managedObjectContext) private var viewContext
+    
+    init() {
+        let context = PersistenceController.shared.container.viewContext
+        _recordingService = StateObject(wrappedValue: MeetingRecordingService(context: context))
+    }
     
     var body: some View {
         NavigationView {
@@ -32,7 +37,9 @@ struct MeetingView: View {
                     NoteEditorView(
                         text: $userNotes,
                         isRecording: recordingService.isRecording,
+                        transcript: recordingService.currentTranscript.isEmpty ? nil : recordingService.currentTranscript,
                         onTextChange: { text in
+                            print("📝 [MeetingView] Notes changed - length: \(text.count)")
                             if recordingService.isRecording {
                                 recordingService.updateNotes(text)
                             }
@@ -153,27 +160,44 @@ struct MeetingView: View {
     }
     
     private func startMeeting() {
+        print("🚀 [MeetingView] startMeeting called")
+        print("📝 [MeetingView] Title: '\(meetingTitle)', Template: '\(selectedTemplate ?? "none")'")
+        
         let title = meetingTitle.isEmpty ? nil : meetingTitle
         _ = recordingService.startMeeting(title: title, template: selectedTemplate)
         isNotesFocused = true
         
         if let template = selectedTemplate {
+            print("📄 [MeetingView] Applying template: \(template)")
             applyTemplate(template)
         }
+        
+        print("✅ [MeetingView] Meeting started")
     }
     
     private func endMeeting() {
+        print("🛑 [MeetingView] endMeeting called")
+        print("📝 [MeetingView] Current notes length: \(userNotes.count) characters")
+        
         recordingService.stopMeeting()
+        
+        // Clear the UI state
         userNotes = ""
         meetingTitle = ""
         selectedTemplate = nil
         isNotesFocused = false
+        
+        print("🧹 [MeetingView] UI state cleared")
     }
     
     private func togglePause() {
+        print("⏸️ [MeetingView] togglePause called - isPaused: \(recordingService.isPaused)")
+        
         if recordingService.isPaused {
+            print("▶️ [MeetingView] Resuming recording")
             recordingService.resumeRecording()
         } else {
+            print("⏸️ [MeetingView] Pausing recording")
             recordingService.pauseRecording()
         }
     }

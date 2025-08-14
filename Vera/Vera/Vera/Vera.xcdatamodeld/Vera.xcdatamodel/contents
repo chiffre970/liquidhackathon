@@ -16,7 +16,7 @@
         <attribute name="tags" optional="YES" attributeType="String"/>
         <attribute name="timestamp" attributeType="Date" usesScalarValueType="NO"/>
     </entity>
-    <entity name="Meeting" representedClassName="Vera.Meeting" syncable="YES">
+    <entity name="Meeting" representedClassName="Meeting" syncable="YES">
         <attribute name="actionItems" optional="YES" attributeType="Binary"/>
         <attribute name="audioFileURL" optional="YES" attributeType="String"/>
         <attribute name="date" attributeType="Date" usesScalarValueType="NO"/>

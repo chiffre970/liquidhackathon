@@ -11,7 +11,7 @@ import CoreData
 @main
 struct VeraApp: App {
     @StateObject private var lfm2Manager = LFM2Manager.shared
-    let persistenceController = PersistenceController.shared
+    private let persistenceController = PersistenceController.shared
     
     init() {
         print("🚀 Initializing Vera Meeting Notes...")
@@ -33,23 +33,5 @@ struct VeraApp: App {
                     BackgroundProcessor.shared.scheduleBackgroundProcessing()
                 }
         }
-    }
-}
-
-class PersistenceController: ObservableObject {
-    static let shared = PersistenceController()
-    
-    let container: NSPersistentContainer
-    
-    init() {
-        container = NSPersistentContainer(name: "Vera")
-        
-        container.loadPersistentStores { storeDescription, error in
-            if let error = error as NSError? {
-                fatalError("Unresolved error \(error), \(error.userInfo)")
-            }
-        }
-        
-        container.viewContext.automaticallyMergesChangesFromParent = true
     }
 }

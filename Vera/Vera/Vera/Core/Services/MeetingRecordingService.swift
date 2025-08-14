@@ -2,6 +2,7 @@ import Foundation
 import AVFoundation
 import CoreData
 import Combine
+import SwiftUI
 
 class MeetingRecordingService: ObservableObject {
     @Published var isRecording: Bool = false
@@ -22,10 +23,11 @@ class MeetingRecordingService: ObservableObject {
     private var chunkTimer: Timer?
     private let chunkInterval: TimeInterval = 30
     
-    private let context = PersistenceController.shared.container.viewContext
+    private var context: NSManagedObjectContext
     private var cancellables = Set<AnyCancellable>()
     
-    init() {
+    init(context: NSManagedObjectContext? = nil) {
+        self.context = context ?? PersistenceController.shared.container.viewContext
         self.audioRecorder = AudioRecorder()
         self.transcriptionService = TranscriptionService()
         
@@ -46,6 +48,8 @@ class MeetingRecordingService: ObservableObject {
     }
     
     func startMeeting(title: String? = nil, template: String? = nil) -> Meeting {
+        print("📝 [MeetingRecordingService] startMeeting called - title: \(title ?? "nil"), template: \(template ?? "nil")")
+        
         let meeting = Meeting(context: context)
         meeting.id = UUID()
         meeting.title = title ?? generateMeetingTitle()
@@ -54,39 +58,57 @@ class MeetingRecordingService: ObservableObject {
         meeting.templateUsed = template
         meeting.rawNotes = ""
         
+        print("📝 [MeetingRecordingService] Created meeting with ID: \(meeting.id), title: \(meeting.title)")
+        
         do {
             try context.save()
             currentMeeting = meeting
+            print("✅ [MeetingRecordingService] Meeting saved to CoreData successfully")
         } catch {
             self.error = error
-            print("Failed to create meeting: \(error)")
+            print("❌ [MeetingRecordingService] Failed to create meeting: \(error)")
         }
         
+        print("🎙️ [MeetingRecordingService] Starting recording...")
         startRecording()
         
         return meeting
     }
     
     func stopMeeting() {
+        print("🛑 [MeetingRecordingService] stopMeeting called")
+        print("📊 [MeetingRecordingService] Current meeting ID: \(currentMeeting?.id.uuidString ?? "nil")")
+        print("⏱️ [MeetingRecordingService] Recording duration: \(recordingDuration) seconds")
+        
         stopRecording()
         
         if let meeting = currentMeeting {
             meeting.duration = recordingDuration
+            meeting.transcript = currentTranscript
+            print("📝 [MeetingRecordingService] Updated meeting duration: \(meeting.duration)")
+            print("📝 [MeetingRecordingService] Saved transcript: \(currentTranscript.count) characters")
             
             if let finalAudioURL = mergeAudioChunks() {
                 meeting.audioFileURL = finalAudioURL.absoluteString
+                print("🎵 [MeetingRecordingService] Audio saved to: \(finalAudioURL.lastPathComponent)")
+            } else {
+                print("⚠️ [MeetingRecordingService] No audio URL created")
             }
             
             do {
                 try context.save()
+                print("✅ [MeetingRecordingService] Meeting saved successfully")
                 processInBackground(meeting: meeting)
             } catch {
                 self.error = error
-                print("Failed to save meeting: \(error)")
+                print("❌ [MeetingRecordingService] Failed to save meeting: \(error)")
             }
+        } else {
+            print("⚠️ [MeetingRecordingService] No current meeting to stop")
         }
         
         cleanup()
+        print("🧹 [MeetingRecordingService] Cleanup completed")
     }
     
     func pauseRecording() {
@@ -122,6 +144,8 @@ class MeetingRecordingService: ObservableObject {
     }
     
     private func startRecording() {
+        print("🎙️ [MeetingRecordingService] startRecording called")
+        
         isRecording = true
         isPaused = false
         recordingStartTime = Date()
@@ -129,24 +153,39 @@ class MeetingRecordingService: ObservableObject {
         pausedDuration = 0
         audioChunks = []
         
+        print("🎤 [MeetingRecordingService] Starting audio recorder...")
         audioRecorder.startRecording()
+        
+        print("🗣️ [MeetingRecordingService] Starting transcription service...")
         transcriptionService.startTranscribing()
         
+        print("⏰ [MeetingRecordingService] Starting timers...")
         startTimers()
+        
+        print("✅ [MeetingRecordingService] Recording started successfully")
     }
     
     private func stopRecording() {
+        print("🛑 [MeetingRecordingService] stopRecording called")
+        
         isRecording = false
         isPaused = false
         
+        print("🎤 [MeetingRecordingService] Stopping audio recorder...")
         if let currentChunkURL = audioRecorder.stopRecording() {
             audioChunks.append(currentChunkURL)
+            print("📁 [MeetingRecordingService] Added final chunk: \(currentChunkURL.lastPathComponent)")
         }
         
+        print("🗣️ [MeetingRecordingService] Stopping transcription...")
         transcriptionService.stopTranscribing()
         
+        print("⏰ [MeetingRecordingService] Invalidating timers...")
         timer?.invalidate()
         chunkTimer?.invalidate()
+        
+        print("📊 [MeetingRecordingService] Total chunks collected: \(audioChunks.count)")
+        print("📝 [MeetingRecordingService] Final transcript length: \(currentTranscript.count) characters")
     }
     
     private func startTimers() {
@@ -164,20 +203,34 @@ class MeetingRecordingService: ObservableObject {
     }
     
     private func saveAudioChunk() {
-        guard isRecording && !isPaused else { return }
+        guard isRecording && !isPaused else { 
+            print("⏸️ [MeetingRecordingService] Skipping chunk save - not recording or paused")
+            return 
+        }
+        
+        print("💾 [MeetingRecordingService] Saving audio chunk #\(audioChunks.count + 1)")
         
         if let currentChunkURL = audioRecorder.stopRecording() {
             audioChunks.append(currentChunkURL)
+            print("✅ [MeetingRecordingService] Chunk saved: \(currentChunkURL.lastPathComponent)")
             
+            print("🎤 [MeetingRecordingService] Restarting audio recorder for next chunk...")
             audioRecorder.startRecording()
             
             Task {
+                print("🔄 [MeetingRecordingService] Transcribing chunk...")
                 if let transcription = await transcriptionService.transcribeAudioFile(at: currentChunkURL) {
                     await MainActor.run {
+                        let previousLength = self.currentTranscript.count
                         self.currentTranscript += "\n" + transcription
+                        print("📝 [MeetingRecordingService] Added \(transcription.count) chars to transcript (total: \(self.currentTranscript.count))")
                     }
+                } else {
+                    print("⚠️ [MeetingRecordingService] Failed to transcribe chunk")
                 }
             }
+        } else {
+            print("❌ [MeetingRecordingService] Failed to save audio chunk")
         }
     }
     
@@ -293,15 +346,22 @@ class MeetingRecordingService: ObservableObject {
     }
     
     func updateNotes(_ notes: String) {
-        guard let meeting = currentMeeting else { return }
+        guard let meeting = currentMeeting else { 
+            print("⚠️ [MeetingRecordingService] updateNotes - No current meeting")
+            return 
+        }
+        
+        print("📝 [MeetingRecordingService] Updating notes for meeting \(meeting.id.uuidString)")
+        print("📏 [MeetingRecordingService] Notes length: \(notes.count) characters")
         
         meeting.rawNotes = notes
         
         do {
             try context.save()
+            print("✅ [MeetingRecordingService] Notes updated successfully")
         } catch {
             self.error = error
-            print("Failed to update notes: \(error)")
+            print("❌ [MeetingRecordingService] Failed to update notes: \(error)")
         }
     }
     

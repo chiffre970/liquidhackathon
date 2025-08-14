@@ -3,6 +3,7 @@ import SwiftUI
 struct NoteEditorView: View {
     @Binding var text: String
     let isRecording: Bool
+    let transcript: String?
     let onTextChange: (String) -> Void
     
     @State private var showFormattingBar = true
@@ -20,46 +21,83 @@ struct NoteEditorView: View {
                 .background(Color.gray.opacity(0.05))
             }
             
-            TextEditor(text: $text)
-                .font(.system(.body, design: .monospaced))
-                .padding(8)
-                .focused($isFocused)
-                .onChange(of: text) { oldValue, newValue in
-                    onTextChange(newValue)
-                }
-                .toolbar {
-                    ToolbarItemGroup(placement: .keyboard) {
+            if isRecording && transcript != nil && !transcript!.isEmpty {
+                VStack(spacing: 0) {
+                    VStack(alignment: .leading, spacing: 8) {
                         HStack {
-                            Button(action: insertTimestamp) {
-                                Image(systemName: "clock")
-                            }
-                            
-                            Button(action: { insertMarkdown("**", "**") }) {
-                                Image(systemName: "bold")
-                            }
-                            
-                            Button(action: { insertMarkdown("*", "*") }) {
-                                Image(systemName: "italic")
-                            }
-                            
-                            Button(action: { insertMarkdown("- ") }) {
-                                Image(systemName: "list.bullet")
-                            }
-                            
-                            Button(action: { insertMarkdown("## ") }) {
-                                Image(systemName: "number")
-                            }
-                            
+                            Label("Live Transcript", systemImage: "mic.fill")
+                                .font(.caption)
+                                .foregroundColor(.red)
+                                .textCase(.uppercase)
                             Spacer()
-                            
-                            Button("Done") {
-                                isFocused = false
-                            }
                         }
+                        .padding(.horizontal, 12)
+                        .padding(.top, 8)
+                        
+                        ScrollView {
+                            Text(transcript!)
+                                .font(.system(.body))
+                                .foregroundColor(.primary)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                                .padding(.horizontal, 12)
+                                .padding(.bottom, 8)
+                        }
+                        .frame(maxHeight: 150)
                     }
+                    .background(Color.red.opacity(0.05))
+                    
+                    Divider()
+                    
+                    TextEditor(text: $text)
+                        .font(.system(.body, design: .monospaced))
+                        .padding(8)
+                        .focused($isFocused)
+                        .onChange(of: text) { newValue in
+                            onTextChange(newValue)
+                        }
                 }
+            } else {
+                TextEditor(text: $text)
+                    .font(.system(.body, design: .monospaced))
+                    .padding(8)
+                    .focused($isFocused)
+                    .onChange(of: text) { newValue in
+                        onTextChange(newValue)
+                    }
+            }
         }
         .background(Color.white)
+        .toolbar {
+            ToolbarItemGroup(placement: .keyboard) {
+                HStack {
+                    Button(action: insertTimestamp) {
+                        Image(systemName: "clock")
+                    }
+                    
+                    Button(action: { insertMarkdown("**", "**") }) {
+                        Image(systemName: "bold")
+                    }
+                    
+                    Button(action: { insertMarkdown("*", "*") }) {
+                        Image(systemName: "italic")
+                    }
+                    
+                    Button(action: { insertMarkdown("- ") }) {
+                        Image(systemName: "list.bullet")
+                    }
+                    
+                    Button(action: { insertMarkdown("## ") }) {
+                        Image(systemName: "number")
+                    }
+                    
+                    Spacer()
+                    
+                    Button("Done") {
+                        isFocused = false
+                    }
+                }
+            }
+        }
     }
     
     private func insertTimestamp() {
