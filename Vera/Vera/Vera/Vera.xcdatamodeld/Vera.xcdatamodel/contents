@@ -18,7 +18,6 @@
     </entity>
     <entity name="Meeting" representedClassName="Meeting" syncable="YES">
         <attribute name="actionItems" optional="YES" attributeType="Binary"/>
-        <attribute name="audioFileURL" optional="YES" attributeType="String"/>
         <attribute name="date" attributeType="Date" usesScalarValueType="NO"/>
         <attribute name="duration" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
         <attribute name="enhancedNotes" optional="YES" attributeType="String"/>

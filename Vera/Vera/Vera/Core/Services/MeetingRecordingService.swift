@@ -88,12 +88,9 @@ class MeetingRecordingService: ObservableObject {
             print("📝 [MeetingRecordingService] Updated meeting duration: \(meeting.duration)")
             print("📝 [MeetingRecordingService] Saved transcript: \(currentTranscript.count) characters")
             
-            if let finalAudioURL = mergeAudioChunks() {
-                meeting.audioFileURL = finalAudioURL.absoluteString
-                print("🎵 [MeetingRecordingService] Audio saved to: \(finalAudioURL.lastPathComponent)")
-            } else {
-                print("⚠️ [MeetingRecordingService] No audio URL created")
-            }
+            // Clean up temporary audio chunks without saving
+            cleanupAudioChunks()
+            print("🧙 [MeetingRecordingService] Temporary audio files cleaned up")
             
             do {
                 try context.save()
@@ -208,11 +205,11 @@ class MeetingRecordingService: ObservableObject {
             return 
         }
         
-        print("💾 [MeetingRecordingService] Saving audio chunk #\(audioChunks.count + 1)")
+        print("💾 [MeetingRecordingService] Processing audio chunk #\(audioChunks.count + 1)")
         
         if let currentChunkURL = audioRecorder.stopRecording() {
             audioChunks.append(currentChunkURL)
-            print("✅ [MeetingRecordingService] Chunk saved: \(currentChunkURL.lastPathComponent)")
+            print("✅ [MeetingRecordingService] Chunk ready for transcription: \(currentChunkURL.lastPathComponent)")
             
             print("🎤 [MeetingRecordingService] Restarting audio recorder for next chunk...")
             audioRecorder.startRecording()
@@ -225,84 +222,18 @@ class MeetingRecordingService: ObservableObject {
                         self.currentTranscript += "\n" + transcription
                         print("📝 [MeetingRecordingService] Added \(transcription.count) chars to transcript (total: \(self.currentTranscript.count))")
                     }
-                } else {
-                    print("⚠️ [MeetingRecordingService] Failed to transcribe chunk")
                 }
+                
+                // Delete the temporary audio chunk after transcription
+                try? FileManager.default.removeItem(at: currentChunkURL)
+                print("🧙 [MeetingRecordingService] Deleted temporary chunk: \(currentChunkURL.lastPathComponent)")
             }
         } else {
-            print("❌ [MeetingRecordingService] Failed to save audio chunk")
+            print("❌ [MeetingRecordingService] Failed to process audio chunk")
         }
     }
     
-    private func mergeAudioChunks() -> URL? {
-        guard !audioChunks.isEmpty else { return nil }
-        
-        // Always create a final file in Documents directory
-        let documentsURL = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
-        let outputURL = documentsURL
-            .appendingPathComponent("meeting_\(UUID().uuidString).m4a")
-        
-        if audioChunks.count == 1 {
-            // Single chunk - just copy it to final location
-            do {
-                try FileManager.default.copyItem(at: audioChunks[0], to: outputURL)
-                cleanupAudioChunks()
-                return outputURL
-            } catch {
-                print("❌ Failed to copy audio file: \(error)")
-                return nil
-            }
-        }
-        
-        let composition = AVMutableComposition()
-        let compositionTrack = composition.addMutableTrack(
-            withMediaType: .audio,
-            preferredTrackID: kCMPersistentTrackID_Invalid
-        )
-        
-        var currentTime = CMTime.zero
-        
-        for chunkURL in audioChunks {
-            let asset = AVAsset(url: chunkURL)
-            guard let track = asset.tracks(withMediaType: .audio).first else { continue }
-            
-            let duration = asset.duration
-            let timeRange = CMTimeRange(start: .zero, duration: duration)
-            
-            try? compositionTrack?.insertTimeRange(
-                timeRange,
-                of: track,
-                at: currentTime
-            )
-            
-            currentTime = CMTimeAdd(currentTime, duration)
-        }
-        
-        // outputURL already defined above
-        
-        guard let exportSession = AVAssetExportSession(
-            asset: composition,
-            presetName: AVAssetExportPresetAppleM4A
-        ) else { return nil }
-        
-        exportSession.outputURL = outputURL
-        exportSession.outputFileType = .m4a
-        
-        let semaphore = DispatchSemaphore(value: 0)
-        
-        exportSession.exportAsynchronously {
-            semaphore.signal()
-        }
-        
-        semaphore.wait()
-        
-        if exportSession.status == .completed {
-            cleanupAudioChunks()
-            return outputURL
-        }
-        
-        return nil
-    }
+    // This method is no longer needed as we don't save audio files
     
     private func cleanupAudioChunks() {
         for chunkURL in audioChunks {
@@ -319,14 +250,7 @@ class MeetingRecordingService: ObservableObject {
                 meeting.transcript = currentTranscript
             }
             
-            if let audioURLString = meeting.audioFileURL,
-               let audioURL = URL(string: audioURLString) {
-                print("🎵 [MeetingRecordingService] Transcribing full audio file...")
-                if let fullTranscription = await transcriptionService.transcribeAudioFile(at: audioURL) {
-                    meeting.transcript = fullTranscription
-                    print("✅ [MeetingRecordingService] Full transcription completed: \(fullTranscription.count) characters")
-                }
-            }
+            // No audio file to transcribe since we only save the transcript
             
             meeting.processingStatus = ProcessingStatus.pending.rawValue
             
@@ -410,10 +334,7 @@ class MeetingRecordingService: ObservableObject {
     }
     
     func deleteMeeting(_ meeting: Meeting) {
-        if let audioURLString = meeting.audioFileURL,
-           let audioURL = URL(string: audioURLString) {
-            try? FileManager.default.removeItem(at: audioURL)
-        }
+        // No audio files to delete since we only save transcripts
         
         context.delete(meeting)
         

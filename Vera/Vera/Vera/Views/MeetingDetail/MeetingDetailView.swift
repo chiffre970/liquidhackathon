@@ -1,6 +1,5 @@
 import SwiftUI
 import CoreData
-import AVFoundation
 
 struct MeetingDetailView: View {
     @ObservedObject var meeting: Meeting
@@ -14,8 +13,6 @@ struct MeetingDetailView: View {
     @State private var showingExportSheet = false
     @State private var showingDeleteAlert = false
     @State private var selectedTab = 0
-    @State private var isPlayingAudio = false
-    @State private var audioPlayer: AVAudioPlayer?
     @State private var showingShareSheet = false
     @State private var exportedFileURL: URL?
     
@@ -91,12 +88,6 @@ struct MeetingDetailView: View {
                 ShareSheet(activityItems: [url])
             }
         }
-        .onAppear {
-            setupAudioPlayer()
-        }
-        .onDisappear {
-            audioPlayer?.stop()
-        }
         .onReceive(NotificationCenter.default.publisher(for: Notification.Name("MeetingEnhancementCompleted"))) { notification in
             if let meetingId = notification.object as? UUID,
                meetingId == meeting.id {
@@ -131,20 +122,6 @@ struct MeetingDetailView: View {
                         )
                     }
                     
-                    if meeting.audioFileURL != nil {
-                        Button(action: toggleAudioPlayback) {
-                            HStack(spacing: 4) {
-                                Image(systemName: isPlayingAudio ? "pause.circle.fill" : "play.circle.fill")
-                                Text(isPlayingAudio ? "Pause" : "Play")
-                                    .font(.caption)
-                            }
-                            .padding(.horizontal, 12)
-                            .padding(.vertical, 6)
-                            .background(Color.blue)
-                            .foregroundColor(.white)
-                            .cornerRadius(15)
-                        }
-                    }
                 }
                 .padding(.horizontal)
             }
@@ -374,26 +351,6 @@ struct MeetingDetailView: View {
         return combined.split(separator: " ").count
     }
     
-    private func setupAudioPlayer() {
-        guard let urlString = meeting.audioFileURL,
-              let url = URL(string: urlString) else { return }
-        
-        do {
-            audioPlayer = try AVAudioPlayer(contentsOf: url)
-            audioPlayer?.prepareToPlay()
-        } catch {
-            print("Failed to setup audio player: \(error)")
-        }
-    }
-    
-    private func toggleAudioPlayback() {
-        if isPlayingAudio {
-            audioPlayer?.pause()
-        } else {
-            audioPlayer?.play()
-        }
-        isPlayingAudio.toggle()
-    }
     
     private func reprocessWithAI() {
         meeting.processingStatus = ProcessingStatus.pending.rawValue
@@ -425,11 +382,6 @@ struct MeetingDetailView: View {
     }
     
     private func deleteMeeting() {
-        if let urlString = meeting.audioFileURL,
-           let url = URL(string: urlString) {
-            try? FileManager.default.removeItem(at: url)
-        }
-        
         viewContext.delete(meeting)
         do {
             try viewContext.save()

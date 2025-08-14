@@ -157,23 +157,7 @@ struct MeetingListView: View {
     private func deleteMeeting(_ meeting: Meeting) {
         print("🗑️ [MeetingListView] Deleting meeting: \(meeting.id.uuidString)")
         
-        // Delete audio file if it exists (do this in background to not block UI)
-        if let audioURL = meeting.audioURL {
-            Task.detached {
-                print("📁 [MeetingListView] Deleting audio file: \(audioURL.path)")
-                
-                if FileManager.default.fileExists(atPath: audioURL.path) {
-                    do {
-                        try FileManager.default.removeItem(at: audioURL)
-                        print("✅ [MeetingListView] Audio file deleted successfully")
-                    } catch {
-                        print("❌ [MeetingListView] Failed to delete audio file: \(error)")
-                    }
-                } else {
-                    print("⚠️ [MeetingListView] Audio file doesn't exist at path: \(audioURL.path)")
-                }
-            }
-        }
+        // No audio files to delete since we only save transcripts
         
         // Delete from Core Data synchronously on main thread
         viewContext.delete(meeting)

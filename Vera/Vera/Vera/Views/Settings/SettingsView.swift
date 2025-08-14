@@ -21,7 +21,7 @@ struct SettingsView: View {
                         Text("Brainstorm").tag("Brainstorm")
                     }
                     
-                    Picker("Audio Quality", selection: $audioQuality) {
+                    Picker("Transcription Quality", selection: $audioQuality) {
                         Text("Low").tag("low")
                         Text("Medium").tag("medium")
                         Text("High").tag("high")

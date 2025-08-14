@@ -29,7 +29,6 @@ extension Meeting {
     @NSManaged public var keyDecisions: Data?
     @NSManaged public var questions: Data?
     @NSManaged public var templateUsed: String?
-    @NSManaged public var audioFileURL: String?
     @NSManaged public var insights: Data?
     @NSManaged public var processingStatus: String?
     @NSManaged public var lastProcessedDate: Date?
@@ -179,15 +178,4 @@ extension Meeting {
         }
     }
     
-    var audioURL: URL? {
-        guard let audioFileURL = audioFileURL else { return nil }
-        // Handle both file:// URLs and plain file paths
-        if audioFileURL.starts(with: "file://") {
-            return URL(string: audioFileURL)
-        } else if audioFileURL.starts(with: "/") {
-            return URL(fileURLWithPath: audioFileURL)
-        } else {
-            return URL(string: audioFileURL)
-        }
-    }
 }

@@ -41,11 +41,12 @@ class AudioRecorder: NSObject, ObservableObject {
     }
     
     func startRecording() {
-        print("🎤 [AudioRecorder] startRecording called")
+        print("🎤 [AudioRecorder] startRecording called (audio-only for transcription)")
         
-        let documentsPath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
-        let audioFilename = documentsPath.appendingPathComponent("recording_\(Date().timeIntervalSince1970).m4a")
-        print("📁 [AudioRecorder] Recording to: \(audioFilename.lastPathComponent)")
+        // Use temporary directory since we won't save the audio
+        let tempPath = FileManager.default.temporaryDirectory
+        let audioFilename = tempPath.appendingPathComponent("temp_recording_\(Date().timeIntervalSince1970).m4a")
+        print("📁 [AudioRecorder] Recording temporarily to: \(audioFilename.lastPathComponent)")
         
         let settings: [String: Any] = [
             AVFormatIDKey: Int(kAudioFormatMPEG4AAC),
@@ -103,12 +104,13 @@ class AudioRecorder: NSObject, ObservableObject {
         levelTimer = nil
         audioLevel = 0
         
-        // Check if file exists
+        // Return the temporary URL for transcription only
+        // The file will be deleted after transcription
         if FileManager.default.fileExists(atPath: url.path) {
             do {
                 let attributes = try FileManager.default.attributesOfItem(atPath: url.path)
                 let fileSize = attributes[.size] as? Int64 ?? 0
-                print("✅ [AudioRecorder] Audio file saved: \(fileSize) bytes")
+                print("✅ [AudioRecorder] Temporary audio file ready for transcription: \(fileSize) bytes")
             } catch {
                 print("⚠️ [AudioRecorder] Could not get file size: \(error)")
             }
