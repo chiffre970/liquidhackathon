@@ -31,28 +31,8 @@ struct MeetingDetailView: View {
                         Label("Overview", systemImage: "chart.bar.doc.horizontal")
                     }
                 
-                actionItemsTab
-                    .tag(1)
-                    .tabItem {
-                        Label("Actions", systemImage: "checklist")
-                    }
-                    .badge(incompletedActionCount)
-                
-                decisionsTab
-                    .tag(2)
-                    .tabItem {
-                        Label("Decisions", systemImage: "lightbulb")
-                    }
-                
-                questionsTab
-                    .tag(3)
-                    .tabItem {
-                        Label("Questions", systemImage: "questionmark.circle")
-                    }
-                    .badge(unansweredQuestionsCount)
-                
                 transcriptTab
-                    .tag(4)
+                    .tag(1)
                     .tabItem {
                         Label("Transcript", systemImage: "mic")
                     }
@@ -272,39 +252,7 @@ struct MeetingDetailView: View {
                 color: .blue
             )
             
-            StatCard(
-                title: "Actions",
-                value: "\(meeting.actionItemsArray.count)",
-                icon: "checklist",
-                color: .orange
-            )
-            
-            StatCard(
-                title: "Decisions",
-                value: "\(meeting.keyDecisionsArray.count)",
-                icon: "lightbulb",
-                color: .green
-            )
-            
-            StatCard(
-                title: "Questions",
-                value: "\(meeting.questionsArray.count)",
-                icon: "questionmark.circle",
-                color: .purple
-            )
         }
-    }
-    
-    private var actionItemsTab: some View {
-        ActionItemsView(meeting: meeting)
-    }
-    
-    private var decisionsTab: some View {
-        DecisionsTimelineView(meeting: meeting)
-    }
-    
-    private var questionsTab: some View {
-        QuestionsView(meeting: meeting)
     }
     
     private var transcriptTab: some View {
@@ -336,14 +284,6 @@ struct MeetingDetailView: View {
         }
     }
     
-    private var incompletedActionCount: Int {
-        meeting.actionItemsArray.filter { !$0.isCompleted }.count
-    }
-    
-    private var unansweredQuestionsCount: Int {
-        meeting.questionsArray.filter { $0.needsFollowUp }.count
-    }
-    
     private var wordCount: Int {
         let transcript = meeting.transcript ?? ""
         let notes = meeting.rawNotes ?? ""
@@ -357,7 +297,8 @@ struct MeetingDetailView: View {
         
         Task {
             let enhancementService = MeetingEnhancementService.shared
-            try? await enhancementService.enhanceMeeting(meeting, context: viewContext)
+            // Use the new single comprehensive analysis method
+            try? await enhancementService.analyzeCompletedMeeting(meeting, context: viewContext)
         }
     }
     

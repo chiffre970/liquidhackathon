@@ -9,6 +9,7 @@ struct MeetingView: View {
     @State private var meetingTitle: String = ""
     @State private var showEndMeetingAlert = false
     @State private var keyboardHeight: CGFloat = 0
+    @State private var showNewMeetingAlert = false
     @FocusState private var isNotesFocused: Bool
     
     @Environment(\.managedObjectContext) private var viewContext
@@ -40,9 +41,7 @@ struct MeetingView: View {
                         transcript: recordingService.currentTranscript.isEmpty ? nil : recordingService.currentTranscript,
                         onTextChange: { text in
                             print("📝 [MeetingView] Notes changed - length: \(text.count)")
-                            if recordingService.isRecording {
-                                recordingService.updateNotes(text)
-                            }
+                            recordingService.updateNotes(text)
                         }
                     )
                     .focused($isNotesFocused)
@@ -58,21 +57,20 @@ struct MeetingView: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .principal) {
-                    if recordingService.isRecording {
-                        Text(recordingService.currentMeeting?.title ?? "Meeting")
-                            .font(.headline)
-                    } else {
-                        Text("New Meeting")
-                            .font(.headline)
-                    }
+                    Text(recordingService.currentMeeting?.title ?? "New Meeting")
+                        .font(.headline)
                 }
                 
-                if recordingService.isRecording {
-                    ToolbarItem(placement: .navigationBarTrailing) {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    if recordingService.isRecording {
                         Button("End") {
                             showEndMeetingAlert = true
                         }
                         .foregroundColor(.red)
+                    } else if recordingService.currentMeeting != nil {
+                        Button("New") {
+                            showNewMeetingAlert = true
+                        }
                     }
                 }
             }
@@ -84,6 +82,14 @@ struct MeetingView: View {
             }
         } message: {
             Text("This will stop recording and save your meeting notes.")
+        }
+        .alert("Start New Meeting?", isPresented: $showNewMeetingAlert) {
+            Button("Cancel", role: .cancel) { }
+            Button("New Meeting", role: .destructive) {
+                startNewMeeting()
+            }
+        } message: {
+            Text("This will save the current meeting and start a new one.")
         }
         .sheet(isPresented: $showTemplates) {
             TemplatePickerSheet(
@@ -106,12 +112,18 @@ struct MeetingView: View {
                 keyboardHeight = 0
             }
         }
+        .onAppear {
+            initializeMeeting()
+        }
+        .onChange(of: meetingTitle) { newValue in
+            recordingService.updateTitle(newValue)
+        }
     }
     
     private var startRecordingSection: some View {
         VStack(spacing: 16) {
             VStack(spacing: 12) {
-                TextField("Meeting Title (optional)", text: $meetingTitle)
+                TextField("Meeting Title", text: $meetingTitle)
                     .textFieldStyle(.roundedBorder)
                     .padding(.horizontal)
                 
@@ -161,33 +173,75 @@ struct MeetingView: View {
     
     private func startMeeting() {
         print("🚀 [MeetingView] startMeeting called")
-        print("📝 [MeetingView] Title: '\(meetingTitle)', Template: '\(selectedTemplate ?? "none")'")
+        print("📝 [MeetingView] Using existing meeting")
         
-        let title = meetingTitle.isEmpty ? nil : meetingTitle
-        _ = recordingService.startMeeting(title: title, template: selectedTemplate)
+        recordingService.startRecordingSession()
         isNotesFocused = true
         
-        if let template = selectedTemplate {
-            print("📄 [MeetingView] Applying template: \(template)")
-            applyTemplate(template)
-        }
-        
-        print("✅ [MeetingView] Meeting started")
+        print("✅ [MeetingView] Recording started")
     }
     
     private func endMeeting() {
         print("🛑 [MeetingView] endMeeting called")
         print("📝 [MeetingView] Current notes length: \(userNotes.count) characters")
         
-        recordingService.stopMeeting()
+        recordingService.stopRecordingSession()
+        isNotesFocused = false
         
-        // Clear the UI state
+        // Keep the meeting loaded for display
+        loadCurrentMeeting()
+        
+        print("✅ [MeetingView] Recording stopped")
+    }
+    
+    private func startNewMeeting() {
+        print("🆕 [MeetingView] Starting new meeting")
+        
+        // Save current meeting if needed
+        recordingService.saveMeeting()
+        
+        // Create new meeting (this will clear the transcript)
+        recordingService.createNewMeeting()
+        
+        // Clear UI state
         userNotes = ""
         meetingTitle = ""
         selectedTemplate = nil
-        isNotesFocused = false
         
-        print("🧹 [MeetingView] UI state cleared")
+        // Don't reload from meeting since it's a new empty meeting
+        // The UI will already show empty fields
+        
+        print("✅ [MeetingView] New meeting created")
+    }
+    
+    private func initializeMeeting() {
+        print("🏁 [MeetingView] Initializing meeting on appear")
+        
+        // Check if there's already a current meeting
+        if recordingService.currentMeeting == nil {
+            recordingService.createNewMeeting()
+        }
+        
+        loadCurrentMeeting()
+    }
+    
+    private func loadCurrentMeeting() {
+        if let meeting = recordingService.currentMeeting {
+            userNotes = meeting.rawNotes ?? ""
+            meetingTitle = meeting.title ?? ""
+            selectedTemplate = meeting.templateUsed
+            
+            // Load transcript if available and recording is not active
+            if !recordingService.isRecording && !recordingService.currentTranscript.isEmpty {
+                // Transcript is already in recordingService.currentTranscript
+            } else if let savedTranscript = meeting.transcript, !savedTranscript.isEmpty {
+                // Load saved transcript from meeting if service doesn't have it
+                recordingService.currentTranscript = savedTranscript
+            }
+            
+            print("📋 [MeetingView] Loaded meeting: \(meeting.title ?? "Untitled")")
+            print("📝 [MeetingView] Transcript loaded: \(recordingService.currentTranscript.count) characters")
+        }
     }
     
     private func togglePause() {
@@ -274,6 +328,7 @@ struct MeetingView: View {
         }
         
         selectedTemplate = template
+        recordingService.updateTemplate(template)
     }
 }
 

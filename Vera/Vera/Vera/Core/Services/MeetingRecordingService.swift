@@ -283,15 +283,16 @@ class MeetingRecordingService: ObservableObject {
     }
     
     private func enhanceMeetingWithLFM2(meeting: Meeting) async {
-        print("🤖 [MeetingRecordingService] Starting LFM2 enhancement...")
+        print("🤖 [MeetingRecordingService] Starting LFM2 analysis (single comprehensive prompt)...")
         
         let enhancementService = MeetingEnhancementService.shared
         
         do {
-            try await enhancementService.enhanceMeeting(meeting, context: context)
-            print("✅ [MeetingRecordingService] LFM2 enhancement completed successfully")
+            // Use the new single comprehensive analysis method
+            try await enhancementService.analyzeCompletedMeeting(meeting, context: context)
+            print("✅ [MeetingRecordingService] LFM2 analysis completed successfully")
         } catch {
-            print("❌ [MeetingRecordingService] LFM2 enhancement failed: \(error)")
+            print("❌ [MeetingRecordingService] LFM2 analysis failed: \(error)")
             meeting.processingStatus = ProcessingStatus.failed.rawValue
         }
     }
@@ -304,8 +305,9 @@ class MeetingRecordingService: ObservableObject {
     }
     
     private func cleanup() {
-        currentMeeting = nil
-        currentTranscript = ""
+        // Don't clear currentMeeting or transcript - keep them for display
+        // currentMeeting = nil  // Removed to keep meeting visible
+        // currentTranscript = ""  // Keep transcript visible after recording
         recordingDuration = 0
         recordingStartTime = nil
         pausedDuration = 0
@@ -348,6 +350,98 @@ class MeetingRecordingService: ObservableObject {
 }
 
 extension MeetingRecordingService {
+    func createNewMeeting() {
+        print("🆕 [MeetingRecordingService] Creating new meeting")
+        
+        // Clear transcript when starting a new meeting
+        currentTranscript = ""
+        
+        let meeting = Meeting(context: context)
+        meeting.id = UUID()
+        meeting.title = generateMeetingTitle()
+        meeting.date = Date()
+        meeting.duration = 0
+        meeting.rawNotes = ""
+        
+        do {
+            try context.save()
+            currentMeeting = meeting
+            print("✅ [MeetingRecordingService] New meeting created with ID: \(meeting.id)")
+        } catch {
+            self.error = error
+            print("❌ [MeetingRecordingService] Failed to create new meeting: \(error)")
+        }
+    }
+    
+    func saveMeeting() {
+        guard let meeting = currentMeeting else { return }
+        
+        print("💾 [MeetingRecordingService] Saving meeting: \(meeting.id)")
+        
+        do {
+            try context.save()
+            print("✅ [MeetingRecordingService] Meeting saved")
+        } catch {
+            self.error = error
+            print("❌ [MeetingRecordingService] Failed to save meeting: \(error)")
+        }
+    }
+    
+    func updateTitle(_ title: String) {
+        guard let meeting = currentMeeting else {
+            print("⚠️ [MeetingRecordingService] updateTitle - No current meeting")
+            return
+        }
+        
+        meeting.title = title.isEmpty ? generateMeetingTitle() : title
+        
+        do {
+            try context.save()
+            print("✅ [MeetingRecordingService] Title updated to: \(meeting.title)")
+        } catch {
+            self.error = error
+            print("❌ [MeetingRecordingService] Failed to update title: \(error)")
+        }
+    }
+    
+    func updateTemplate(_ template: String) {
+        guard let meeting = currentMeeting else {
+            print("⚠️ [MeetingRecordingService] updateTemplate - No current meeting")
+            return
+        }
+        
+        meeting.templateUsed = template
+        
+        do {
+            try context.save()
+            print("✅ [MeetingRecordingService] Template updated to: \(template)")
+        } catch {
+            self.error = error
+            print("❌ [MeetingRecordingService] Failed to update template: \(error)")
+        }
+    }
+    
+    func startRecordingSession() {
+        print("🎙️ [MeetingRecordingService] Public startRecordingSession called")
+        
+        // Ensure we have a current meeting
+        if currentMeeting == nil {
+            createNewMeeting()
+        }
+        
+        // Save any existing notes before starting
+        saveMeeting()
+        
+        // Now start the actual recording
+        startRecording()
+    }
+    
+    func stopRecordingSession() {
+        print("🛑 [MeetingRecordingService] Public stopRecordingSession called")
+        stopMeeting()
+    }
+    
+
     static func fetchAllMeetings(context: NSManagedObjectContext) -> [Meeting] {
         let request: NSFetchRequest<Meeting> = Meeting.fetchRequest()
         request.sortDescriptors = [NSSortDescriptor(keyPath: \Meeting.date, ascending: false)]

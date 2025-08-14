@@ -38,18 +38,6 @@ class ExportService {
             content += "## Notes\n\(notes)\n\n"
         }
         
-        if !meeting.actionItemsArray.isEmpty {
-            content += "## Action Items\n"
-            for item in meeting.actionItemsArray {
-                content += "- [ ] \(item.task)"
-                if let owner = item.owner {
-                    content += " (@\(owner))"
-                }
-                content += "\n"
-            }
-            content += "\n"
-        }
-        
         if let transcript = meeting.transcript, !transcript.isEmpty {
             content += "## Transcript\n\(transcript)\n"
         }

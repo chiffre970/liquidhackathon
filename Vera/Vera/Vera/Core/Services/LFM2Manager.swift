@@ -1,5 +1,6 @@
 import Foundation
 import SwiftUI
+import LeapSDK
 
 class LFM2Manager: ObservableObject {
     static let shared = LFM2Manager()
@@ -7,11 +8,14 @@ class LFM2Manager: ObservableObject {
     private var isModelLoaded = false
     private let modelQueue = DispatchQueue(label: "com.vera.lfm2", qos: .userInitiated)
     
+    // Leap SDK model runner
+    private var modelRunner: ModelRunner?
+    
     struct ModelConfiguration {
-        let maxTokens: Int
-        let temperature: Float
-        let topP: Float
-        let streamingEnabled: Bool
+        var maxTokens: Int
+        var temperature: Float
+        var topP: Float
+        var streamingEnabled: Bool
         
         static let summary = ModelConfiguration(
             maxTokens: 2048,
@@ -33,6 +37,8 @@ class LFM2Manager: ObservableObject {
         case modelLoadFailed(String)
         case generationFailed(String)
         case invalidResponse
+        case outOfMemory
+        case timeout
         
         var errorDescription: String? {
             switch self {
@@ -44,6 +50,10 @@ class LFM2Manager: ObservableObject {
                 return "Failed to generate response: \(reason)"
             case .invalidResponse:
                 return "Invalid response from model"
+            case .outOfMemory:
+                return "Model ran out of memory"
+            case .timeout:
+                return "Model inference timed out"
             }
         }
     }
@@ -60,28 +70,25 @@ class LFM2Manager: ObservableObject {
     }
     
     func loadModel() async throws {
-        return try await withCheckedThrowingContinuation { continuation in
-            modelQueue.async { [weak self] in
-                guard let self = self else { 
-                    continuation.resume(throwing: LFM2Error.modelLoadFailed("Manager deallocated"))
-                    return
-                }
-                
-                do {
-                    guard let modelPath = Bundle.main.path(forResource: "lfm_700m", ofType: "bundle") else {
-                        throw LFM2Error.modelLoadFailed("Model bundle not found")
-                    }
-                    
-                    print("📦 Loading LFM2 model from: \(modelPath)")
-                    
-                    self.isModelLoaded = true
-                    print("✅ LFM2 model loaded successfully")
-                    continuation.resume()
-                } catch {
-                    continuation.resume(throwing: error)
-                }
-            }
+        // Get bundle path - DO NOT EXTRACT
+        guard let bundlePath = Bundle.main.path(
+            forResource: "LFM2-700M-8da4w_output_8da8w-seq_4096",
+            ofType: "bundle"
+        ) else {
+            throw LFM2Error.modelLoadFailed("Bundle not found")
         }
+        
+        print("📦 Loading LFM2 model from: \(bundlePath)")
+        
+        // Initialize Leap SDK - load model from bundle URL
+        let bundleURL = URL(fileURLWithPath: bundlePath)
+        self.modelRunner = try await Leap.load(url: bundleURL)
+        
+        self.isModelLoaded = true
+        print("✅ LFM2 model loaded successfully")
+        
+        // Optimize for device memory
+        await optimizeForDevice()
     }
     
     func warmupModel() async {
@@ -104,17 +111,52 @@ class LFM2Manager: ObservableObject {
             throw LFM2Error.modelNotLoaded
         }
         
-        return try await withCheckedThrowingContinuation { continuation in
-            modelQueue.async { [weak self] in
-                guard self != nil else {
-                    continuation.resume(throwing: LFM2Error.generationFailed("Manager deallocated"))
-                    return
-                }
-                
-                let simulatedResponse = self?.simulateResponse(for: prompt, config: configuration) ?? "Error: Manager deallocated"
-                continuation.resume(returning: simulatedResponse)
-            }
+        // Use real Leap SDK inference
+        guard let runner = modelRunner else {
+            throw LFM2Error.modelNotLoaded
         }
+        
+        // Create conversation with system prompt
+        let systemMessage = ChatMessage(
+            role: .system,
+            content: [.text("You are a helpful AI assistant that analyzes meeting transcripts and provides structured insights.")]
+        )
+        
+        let userMessage = ChatMessage(
+            role: .user,
+            content: [.text(prompt)]
+        )
+        
+        let conversation = Conversation(
+            modelRunner: runner,
+            history: [systemMessage]
+        )
+        
+        // Generate response (collect all chunks)
+        var fullResponse = ""
+        let responseStream = conversation.generateResponse(message: userMessage)
+        
+        do {
+            for try await response in responseStream {
+                switch response {
+                case .chunk(let text):
+                    fullResponse += text
+                case .reasoningChunk(_):
+                    // Ignore reasoning chunks for now
+                    break
+                case .complete(_, _):
+                    // Response is complete
+                    break
+                @unknown default:
+                    // Handle any future cases
+                    break
+                }
+            }
+        } catch {
+            throw LFM2Error.generationFailed("Stream error: \(error)")
+        }
+        
+        return fullResponse
     }
     
     func generateJSON<T: Decodable>(
@@ -122,9 +164,26 @@ class LFM2Manager: ObservableObject {
         configuration: ModelConfiguration,
         responseType: T.Type
     ) async throws -> T {
-        let jsonString = try await generate(prompt: prompt, configuration: configuration)
+        // Add JSON instruction to prompt
+        let jsonPrompt = """
+        \(prompt)
         
-        guard let data = jsonString.data(using: .utf8) else {
+        Respond with valid JSON only. No explanation or markdown.
+        """
+        
+        // Generate response with JSON-focused parameters
+        var jsonConfig = configuration
+        jsonConfig.temperature = min(0.3, configuration.temperature) // Lower temperature for structured output
+        
+        let jsonString = try await generate(prompt: jsonPrompt, configuration: jsonConfig)
+        
+        // Clean response (remove any markdown if present)
+        let cleanedJson = jsonString
+            .replacingOccurrences(of: "```json", with: "")
+            .replacingOccurrences(of: "```", with: "")
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        
+        guard let data = cleanedJson.data(using: .utf8) else {
             throw LFM2Error.invalidResponse
         }
         
@@ -132,7 +191,7 @@ class LFM2Manager: ObservableObject {
             return try JSONDecoder().decode(T.self, from: data)
         } catch {
             print("❌ Failed to decode JSON: \(error)")
-            print("Raw response: \(jsonString)")
+            print("Raw response: \(cleanedJson)")
             throw LFM2Error.invalidResponse
         }
     }
@@ -148,107 +207,57 @@ class LFM2Manager: ObservableObject {
         return isModelLoaded
     }
     
-    private func simulateResponse(for prompt: String, config: ModelConfiguration) -> String {
-        if prompt.contains("extract") && prompt.contains("action items") {
-            return """
-            [
-                {
-                    "task": "Follow up with the client about the proposal",
-                    "owner": "John",
-                    "deadline": "\(ISO8601DateFormatter().string(from: Date().addingTimeInterval(7 * 24 * 3600)))",
-                    "priority": "high",
-                    "context": "Client expressed interest but needs more details"
-                },
-                {
-                    "task": "Prepare the quarterly report",
-                    "owner": "Sarah",
-                    "deadline": "\(ISO8601DateFormatter().string(from: Date().addingTimeInterval(3 * 24 * 3600)))",
-                    "priority": "medium",
-                    "context": "For the board meeting next week"
-                }
-            ]
-            """
-        } else if prompt.contains("identify") && prompt.contains("decisions") {
-            return """
-            [
-                {
-                    "decision": "Proceed with the new feature development",
-                    "context": "Team agreed the feature aligns with Q1 goals",
-                    "impact": "Will require 2 additional developers",
-                    "timestamp": "\(ISO8601DateFormatter().string(from: Date()))"
-                },
-                {
-                    "decision": "Postpone the infrastructure upgrade",
-                    "context": "Current system is stable enough for next quarter",
-                    "impact": "Cost savings of $50K this quarter",
-                    "timestamp": "\(ISO8601DateFormatter().string(from: Date()))"
-                }
-            ]
-            """
-        } else if prompt.contains("identify questions") {
-            return """
-            [
-                {
-                    "question": "What is the budget for the new project?",
-                    "context": "Need to finalize resource allocation",
-                    "assignedTo": "Finance team",
-                    "urgency": "high"
-                },
-                {
-                    "question": "Who will lead the customer success initiative?",
-                    "context": "Position needs to be filled by next month",
-                    "assignedTo": "HR",
-                    "urgency": "medium"
-                }
-            ]
-            """
-        } else if prompt.contains("comprehensive") && prompt.contains("summary") {
-            return """
-            {
-                "executiveSummary": "The team discussed Q1 priorities, focusing on product development and customer success. Key decisions were made regarding resource allocation and timeline adjustments.",
-                "keyPoints": [
-                    "New feature development approved for Q1",
-                    "Customer success team expansion planned",
-                    "Infrastructure upgrade postponed to Q2",
-                    "Budget review scheduled for next week",
-                    "Partnership opportunities identified"
-                ],
-                "criticalInfo": "Budget constraints may impact hiring timeline",
-                "unresolvedTopics": [
-                    "Final budget allocation",
-                    "Technical architecture for new feature"
-                ]
-            }
-            """
-        } else {
-            return "This is a simulated response from the LFM2 model for testing purposes."
+    // Memory Management
+    func optimizeForDevice() async {
+        let availableMemory = ProcessInfo.processInfo.physicalMemory
+        
+        if availableMemory < 4_000_000_000 {  // Less than 4GB
+            // Note: Precision control may need to be handled at model load time
+            print("📱 Device has <4GB RAM - using optimized settings")
         }
+        
+        // Note: Memory limits may need to be configured differently with Leap SDK
+    }
+    
+    func handleMemoryPressure() {
+        // Note: Cache clearing may need to be handled differently with Leap SDK
+        print("⚠️ Handling memory pressure")
+        // Consider recreating the model runner if needed
+    }
+    
+    // Error handling with retry logic
+    func generateWithRetry(prompt: String, configuration: ModelConfiguration, retries: Int = 2) async throws -> String {
+        var lastError: Error?
+        var currentConfig = configuration
+        
+        for attempt in 0...retries {
+            do {
+                return try await generate(prompt: prompt, configuration: currentConfig)
+            } catch LFM2Error.outOfMemory {
+                handleMemoryPressure()
+                // Retry with truncated prompt
+                let truncatedPrompt = String(prompt.prefix(2000))
+                return try await generate(prompt: truncatedPrompt, configuration: currentConfig)
+            } catch LFM2Error.timeout {
+                // Retry with shorter max tokens
+                currentConfig.maxTokens = min(256, currentConfig.maxTokens / 2)
+                lastError = LFM2Error.timeout
+                if attempt < retries {
+                    print("⏰ Timeout, retrying with maxTokens: \(currentConfig.maxTokens)")
+                }
+            } catch {
+                lastError = error
+                if attempt < retries {
+                    print("❌ Generation failed, attempt \(attempt + 1)/\(retries + 1)")
+                }
+            }
+        }
+        
+        throw lastError ?? LFM2Error.generationFailed("All retry attempts failed")
     }
 }
 
 extension LFM2Manager {
-    struct ActionItemResponse: Codable {
-        let task: String
-        let owner: String?
-        let deadline: String?
-        let priority: String
-        let context: String?
-    }
-    
-    struct DecisionResponse: Codable {
-        let decision: String
-        let context: String?
-        let impact: String?
-        let timestamp: String
-    }
-    
-    struct QuestionResponse: Codable {
-        let question: String
-        let context: String?
-        let assignedTo: String?
-        let urgency: String
-    }
-    
     struct SummaryResponse: Codable {
         let executiveSummary: String
         let keyPoints: [String]

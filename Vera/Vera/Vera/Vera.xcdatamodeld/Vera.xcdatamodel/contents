@@ -17,16 +17,13 @@
         <attribute name="timestamp" attributeType="Date" usesScalarValueType="NO"/>
     </entity>
     <entity name="Meeting" representedClassName="Meeting" syncable="YES">
-        <attribute name="actionItems" optional="YES" attributeType="Binary"/>
         <attribute name="date" attributeType="Date" usesScalarValueType="NO"/>
         <attribute name="duration" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
         <attribute name="enhancedNotes" optional="YES" attributeType="String"/>
         <attribute name="id" attributeType="UUID" usesScalarValueType="NO"/>
         <attribute name="insights" optional="YES" attributeType="Binary"/>
-        <attribute name="keyDecisions" optional="YES" attributeType="Binary"/>
         <attribute name="lastProcessedDate" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
         <attribute name="processingStatus" optional="YES" attributeType="String"/>
-        <attribute name="questions" optional="YES" attributeType="Binary"/>
         <attribute name="rawNotes" optional="YES" attributeType="String"/>
         <attribute name="templateUsed" optional="YES" attributeType="String"/>
         <attribute name="title" attributeType="String"/>

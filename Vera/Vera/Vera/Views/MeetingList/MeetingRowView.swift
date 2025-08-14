@@ -23,16 +23,6 @@ struct MeetingRowView: View {
         return preview
     }
     
-    private var actionItemCount: Int {
-        do {
-            let count = meeting.actionItemsArray.filter { !$0.isCompleted }.count
-            print("📊 [MeetingRowView] Action items count: \(count)")
-            return count
-        } catch {
-            print("❌ [MeetingRowView] Error getting action items: \(error)")
-            return 0
-        }
-    }
     
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -64,21 +54,6 @@ struct MeetingRowView: View {
                 }
                 
                 Spacer()
-                
-                if actionItemCount > 0 {
-                    HStack(spacing: 4) {
-                        Image(systemName: "checklist")
-                            .font(.caption)
-                        Text("\(actionItemCount)")
-                            .font(.caption)
-                            .fontWeight(.semibold)
-                    }
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 4)
-                    .background(Color.orange.opacity(0.15))
-                    .foregroundColor(.orange)
-                    .cornerRadius(12)
-                }
             }
             
             if !firstTwoLines.isEmpty {

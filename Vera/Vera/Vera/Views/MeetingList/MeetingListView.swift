@@ -233,24 +233,6 @@ struct MeetingDetailPlaceholder: View {
                     .padding(.horizontal)
                 }
                 
-                if !meeting.actionItemsArray.isEmpty {
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text("Action Items")
-                            .font(.headline)
-                        ForEach(meeting.actionItemsArray, id: \.id) { item in
-                            HStack {
-                                Image(systemName: item.isCompleted ? "checkmark.circle.fill" : "circle")
-                                    .foregroundColor(item.isCompleted ? .green : .gray)
-                                Text(item.task)
-                                Spacer()
-                            }
-                        }
-                    }
-                    .padding()
-                    .background(Color.gray.opacity(0.05))
-                    .cornerRadius(12)
-                    .padding(.horizontal)
-                }
             }
             .padding(.vertical)
         }
