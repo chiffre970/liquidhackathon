@@ -155,49 +155,34 @@ struct MeetingListView: View {
     }
     
     private func deleteMeeting(_ meeting: Meeting) {
-        Task { @MainActor in
-            print("🗑️ [MeetingListView] Deleting meeting: \(meeting.id.uuidString)")
-            
-            // Delete audio file if it exists (do this in background)
-            if let audioURLString = meeting.audioFileURL {
-                Task.detached {
-                    print("🎵 [MeetingListView] Audio URL string: \(audioURLString)")
-                    
-                    // Try to create URL from string - might be a file path instead of URL
-                    var audioURL: URL?
-                    if audioURLString.starts(with: "/") {
-                        // It's a file path
-                        audioURL = URL(fileURLWithPath: audioURLString)
-                    } else {
-                        // It's a URL string
-                        audioURL = URL(string: audioURLString)
+        print("🗑️ [MeetingListView] Deleting meeting: \(meeting.id.uuidString)")
+        
+        // Delete audio file if it exists (do this in background to not block UI)
+        if let audioURL = meeting.audioURL {
+            Task.detached {
+                print("📁 [MeetingListView] Deleting audio file: \(audioURL.path)")
+                
+                if FileManager.default.fileExists(atPath: audioURL.path) {
+                    do {
+                        try FileManager.default.removeItem(at: audioURL)
+                        print("✅ [MeetingListView] Audio file deleted successfully")
+                    } catch {
+                        print("❌ [MeetingListView] Failed to delete audio file: \(error)")
                     }
-                    
-                    if let url = audioURL {
-                        print("📁 [MeetingListView] Attempting to delete audio file at: \(url.path)")
-                        if FileManager.default.fileExists(atPath: url.path) {
-                            do {
-                                try FileManager.default.removeItem(at: url)
-                                print("✅ [MeetingListView] Audio file deleted")
-                            } catch {
-                                print("❌ [MeetingListView] Failed to delete audio file: \(error)")
-                            }
-                        } else {
-                            print("⚠️ [MeetingListView] Audio file doesn't exist at path")
-                        }
-                    }
+                } else {
+                    print("⚠️ [MeetingListView] Audio file doesn't exist at path: \(audioURL.path)")
                 }
             }
-            
-            // Delete from Core Data on main thread
-            viewContext.delete(meeting)
-            
-            do {
-                try viewContext.save()
-                print("✅ [MeetingListView] Meeting deleted from Core Data")
-            } catch {
-                print("❌ [MeetingListView] Failed to delete meeting from Core Data: \(error)")
-            }
+        }
+        
+        // Delete from Core Data synchronously on main thread
+        viewContext.delete(meeting)
+        
+        do {
+            try viewContext.save()
+            print("✅ [MeetingListView] Meeting deleted from Core Data")
+        } catch {
+            print("❌ [MeetingListView] Failed to delete meeting from Core Data: \(error)")
         }
     }
     

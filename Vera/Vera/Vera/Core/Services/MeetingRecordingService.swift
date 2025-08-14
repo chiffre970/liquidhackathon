@@ -237,8 +237,21 @@ class MeetingRecordingService: ObservableObject {
     private func mergeAudioChunks() -> URL? {
         guard !audioChunks.isEmpty else { return nil }
         
+        // Always create a final file in Documents directory
+        let documentsURL = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
+        let outputURL = documentsURL
+            .appendingPathComponent("meeting_\(UUID().uuidString).m4a")
+        
         if audioChunks.count == 1 {
-            return audioChunks[0]
+            // Single chunk - just copy it to final location
+            do {
+                try FileManager.default.copyItem(at: audioChunks[0], to: outputURL)
+                cleanupAudioChunks()
+                return outputURL
+            } catch {
+                print("❌ Failed to copy audio file: \(error)")
+                return nil
+            }
         }
         
         let composition = AVMutableComposition()
@@ -265,8 +278,7 @@ class MeetingRecordingService: ObservableObject {
             currentTime = CMTimeAdd(currentTime, duration)
         }
         
-        let outputURL = FileManager.default.temporaryDirectory
-            .appendingPathComponent("meeting_\(UUID().uuidString).m4a")
+        // outputURL already defined above
         
         guard let exportSession = AVAssetExportSession(
             asset: composition,
@@ -301,14 +313,29 @@ class MeetingRecordingService: ObservableObject {
     
     private func processInBackground(meeting: Meeting) {
         Task {
+            print("🔄 [MeetingRecordingService] Starting background processing for meeting: \(meeting.id)")
+            
             if !currentTranscript.isEmpty {
                 meeting.transcript = currentTranscript
             }
             
             if let audioURLString = meeting.audioFileURL,
                let audioURL = URL(string: audioURLString) {
+                print("🎵 [MeetingRecordingService] Transcribing full audio file...")
                 if let fullTranscription = await transcriptionService.transcribeAudioFile(at: audioURL) {
                     meeting.transcript = fullTranscription
+                    print("✅ [MeetingRecordingService] Full transcription completed: \(fullTranscription.count) characters")
+                }
+            }
+            
+            meeting.processingStatus = ProcessingStatus.pending.rawValue
+            
+            await MainActor.run {
+                do {
+                    try context.save()
+                } catch {
+                    self.error = error
+                    print("❌ Failed to save meeting before enhancement: \(error)")
                 }
             }
             
@@ -317,15 +344,32 @@ class MeetingRecordingService: ObservableObject {
             await MainActor.run {
                 do {
                     try context.save()
+                    print("✅ [MeetingRecordingService] Enhanced meeting saved successfully")
+                    
+                    NotificationCenter.default.post(
+                        name: Notification.Name("MeetingEnhancementCompleted"),
+                        object: meeting.id
+                    )
                 } catch {
                     self.error = error
-                    print("Failed to save enhanced meeting: \(error)")
+                    print("❌ Failed to save enhanced meeting: \(error)")
                 }
             }
         }
     }
     
     private func enhanceMeetingWithLFM2(meeting: Meeting) async {
+        print("🤖 [MeetingRecordingService] Starting LFM2 enhancement...")
+        
+        let enhancementService = MeetingEnhancementService.shared
+        
+        do {
+            try await enhancementService.enhanceMeeting(meeting, context: context)
+            print("✅ [MeetingRecordingService] LFM2 enhancement completed successfully")
+        } catch {
+            print("❌ [MeetingRecordingService] LFM2 enhancement failed: \(error)")
+            meeting.processingStatus = ProcessingStatus.failed.rawValue
+        }
     }
     
     private func generateMeetingTitle() -> String {

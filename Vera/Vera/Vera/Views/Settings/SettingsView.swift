@@ -4,6 +4,7 @@ struct SettingsView: View {
     @AppStorage("defaultTemplate") private var defaultTemplate = ""
     @AppStorage("audioQuality") private var audioQuality = "high"
     @AppStorage("autoTranscription") private var autoTranscription = true
+    @AppStorage("autoEnhancement") private var autoEnhancement = true
     @AppStorage("dataRetentionDays") private var dataRetentionDays = 90
     
     @State private var showAbout = false
@@ -27,6 +28,7 @@ struct SettingsView: View {
                     }
                     
                     Toggle("Auto-Transcription", isOn: $autoTranscription)
+                    Toggle("AI Enhancement", isOn: $autoEnhancement)
                 }
                 
                 Section("Data & Storage") {

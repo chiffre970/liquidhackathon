@@ -7,6 +7,7 @@
 
 import SwiftUI
 import CoreData
+import UIKit
 
 @main
 struct VeraApp: App {
@@ -16,7 +17,15 @@ struct VeraApp: App {
     init() {
         print("🚀 Initializing Vera Meeting Notes...")
         
-        BackgroundProcessor.shared.registerBackgroundTasks()
+        // Clean up orphaned audio files on launch
+        let context = persistenceController.container.viewContext
+        Task {
+            await MainActor.run {
+                StorageManager.shared.cleanupOrphanedAudioFiles(context: context)
+            }
+        }
+        
+        // BackgroundProcessor.shared.registerBackgroundTasks()
     }
 
     var body: some Scene {
@@ -28,10 +37,10 @@ struct VeraApp: App {
                 .task {
                     await lfm2Manager.initialize()
                 }
-                .onReceive(NotificationCenter.default.publisher(for: UIApplication.willResignActiveNotification)) { _ in
-                    BackgroundProcessor.shared.endCurrentSession()
-                    BackgroundProcessor.shared.scheduleBackgroundProcessing()
-                }
+                // .onReceive(NotificationCenter.default.publisher(for: UIApplication.willResignActiveNotification)) { _ in
+                //     BackgroundProcessor.shared.endCurrentSession()
+                //     BackgroundProcessor.shared.scheduleBackgroundProcessing()
+                // }
         }
     }
 }
