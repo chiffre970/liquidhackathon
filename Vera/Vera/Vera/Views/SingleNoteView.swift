@@ -5,12 +5,14 @@ struct SingleNoteView: View {
     @ObservedObject var meeting: Meeting
     @StateObject private var recordingService: MeetingRecordingService
     @State private var noteContent: String = ""
+    @State private var noteTitle: String = ""
     @State private var isRecording = false
     @State private var showingEnhanceAlert = false
     @State private var isEnhancing = false
     @State private var showingShareSheet = false
     @State private var showingDeleteAlert = false
     @FocusState private var isEditing: Bool
+    @FocusState private var isTitleEditing: Bool
     
     @Environment(\.managedObjectContext) private var viewContext
     @Environment(\.dismiss) private var dismiss
@@ -94,9 +96,24 @@ struct SingleNoteView: View {
                 alignment: .top
             )
         }
-        .navigationTitle(meeting.title ?? "Note")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
+            ToolbarItem(placement: .principal) {
+                TextField("Note Title", text: $noteTitle)
+                    .font(.headline)
+                    .multilineTextAlignment(.center)
+                    .textFieldStyle(.plain)
+                    .focused($isTitleEditing)
+                    .onSubmit {
+                        saveTitle()
+                        isTitleEditing = false
+                    }
+                    .onTapGesture {
+                        isTitleEditing = true
+                    }
+                    .frame(maxWidth: 250)
+            }
+            
             ToolbarItem(placement: .navigationBarTrailing) {
                 Menu {
                     Button(action: { showingDeleteAlert = true }) {
@@ -141,6 +158,9 @@ struct SingleNoteView: View {
     }
     
     private func loadNote() {
+        // Load title
+        noteTitle = meeting.title ?? ""
+        
         var content = ""
         
         // Load user notes
@@ -171,12 +191,27 @@ struct SingleNoteView: View {
         // Save the raw content (before transcript/enhancement markers)
         let lines = noteContent.components(separatedBy: "\n--- ")
         meeting.rawNotes = lines.first ?? noteContent
-        meeting.title = generateTitle(from: meeting.rawNotes ?? "")
+        
+        // Only auto-generate title if it's empty
+        if noteTitle.isEmpty {
+            meeting.title = generateTitle(from: meeting.rawNotes ?? "")
+            noteTitle = meeting.title ?? "Untitled Note"
+        }
         
         do {
             try viewContext.save()
         } catch {
             print("Failed to save note: \(error)")
+        }
+    }
+    
+    private func saveTitle() {
+        meeting.title = noteTitle.isEmpty ? "Untitled Note" : noteTitle
+        
+        do {
+            try viewContext.save()
+        } catch {
+            print("Failed to save title: \(error)")
         }
     }
     
