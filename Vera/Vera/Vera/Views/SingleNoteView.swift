@@ -250,12 +250,7 @@ struct SingleNoteView: View {
             isRecording = false
             // Update transcript immediately with what we have
             updateTranscript()
-            // Auto-analyze after recording
-            if !recordingService.currentTranscript.isEmpty {
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                    enhanceWithAI()
-                }
-            }
+            // Note: Enhancement happens automatically in MeetingRecordingService.processInBackground
         } else {
             recordingService.startRecordingSession()
             isRecording = true

@@ -29,8 +29,12 @@ class MeetingEnhancementService {
         }
         
         print("🤖 Starting comprehensive meeting analysis...")
-        meeting.processingStatus = ProcessingStatus.processing.rawValue
-        try? context.save()
+        
+        // Update status on main thread
+        await MainActor.run {
+            meeting.processingStatus = ProcessingStatus.processing.rawValue
+            try? context.save()
+        }
         
         do {
             // Ensure model is loaded
