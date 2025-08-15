@@ -40,6 +40,11 @@ struct NoteListView: View {
                 }
                 .listStyle(PlainListStyle())
                 .searchable(text: $searchText, prompt: "Search notes")
+                .navigationDestination(isPresented: $showingNote) {
+                    if let meeting = selectedMeeting {
+                        SingleNoteView(meeting: meeting)
+                    }
+                }
                 
                 // New Note Button (floating)
                 VStack {
