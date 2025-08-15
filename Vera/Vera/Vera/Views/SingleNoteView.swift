@@ -10,7 +10,6 @@ struct SingleNoteView: View {
     @State private var showingEnhanceAlert = false
     @State private var isEnhancing = false
     @State private var showingShareSheet = false
-    @State private var showingDeleteAlert = false
     @FocusState private var isEditing: Bool
     @FocusState private var isTitleEditing: Bool
     
@@ -65,12 +64,21 @@ struct SingleNoteView: View {
                 
                 Spacer()
                 
+                // Done button to dismiss keyboard
+                if isEditing {
+                    Button("Done") {
+                        isEditing = false
+                    }
+                    .font(.body.bold())
+                    .foregroundColor(.blue)
+                }
+                
                 // AI Enhance button (only show if there's content)
                 if !noteContent.isEmpty || meeting.transcript != nil {
                     Button(action: { showingEnhanceAlert = true }) {
                         HStack {
                             Image(systemName: "sparkles")
-                            Text("Enhance")
+                            Text("Analyze")
                         }
                         .padding(.horizontal, 12)
                         .padding(.vertical, 6)
@@ -79,12 +87,6 @@ struct SingleNoteView: View {
                         .cornerRadius(8)
                     }
                     .disabled(isEnhancing)
-                }
-                
-                Button(action: { showingShareSheet = true }) {
-                    Image(systemName: "square.and.arrow.up")
-                        .font(.title2)
-                        .foregroundColor(.blue)
                 }
             }
             .padding()
@@ -99,7 +101,7 @@ struct SingleNoteView: View {
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .principal) {
-                TextField("Note Title", text: $noteTitle)
+                TextField("Meeting Title", text: $noteTitle)
                     .font(.headline)
                     .multilineTextAlignment(.center)
                     .textFieldStyle(.plain)
@@ -116,8 +118,16 @@ struct SingleNoteView: View {
             
             ToolbarItem(placement: .navigationBarTrailing) {
                 Menu {
-                    Button(action: { showingDeleteAlert = true }) {
-                        Label("Delete Note", systemImage: "trash")
+                    Button(action: { 
+                        showingEnhanceAlert = true 
+                    }) {
+                        Label("Reanalyze with AI", systemImage: "sparkles")
+                    }
+                    
+                    Button(action: { 
+                        showingShareSheet = true 
+                    }) {
+                        Label("Share", systemImage: "square.and.arrow.up")
                     }
                 } label: {
                     Image(systemName: "ellipsis.circle")
@@ -127,6 +137,12 @@ struct SingleNoteView: View {
         .onAppear {
             loadNote()
             recordingService.currentMeeting = meeting
+            
+            // Auto-focus keyboard for new meetings
+            if meeting.rawNotes?.isEmpty ?? true && 
+               meeting.transcript?.isEmpty ?? true {
+                isEditing = true
+            }
         }
         .onDisappear {
             if recordingService.isRecording {
@@ -135,19 +151,11 @@ struct SingleNoteView: View {
         }
         .alert("Enhance with AI?", isPresented: $showingEnhanceAlert) {
             Button("Cancel", role: .cancel) { }
-            Button("Enhance") {
+            Button("Analyze") {
                 enhanceWithAI()
             }
         } message: {
-            Text("This will use AI to create a structured summary and extract key insights from your note.")
-        }
-        .alert("Delete Note?", isPresented: $showingDeleteAlert) {
-            Button("Cancel", role: .cancel) { }
-            Button("Delete", role: .destructive) {
-                deleteNote()
-            }
-        } message: {
-            Text("This action cannot be undone.")
+            Text("This will use AI to create a structured summary and extract key insights from your meeting.")
         }
         .sheet(isPresented: $showingShareSheet) {
             NoteShareSheet(content: generateShareContent())
@@ -195,7 +203,7 @@ struct SingleNoteView: View {
         // Only auto-generate title if it's empty
         if noteTitle.isEmpty {
             meeting.title = generateTitle(from: meeting.rawNotes ?? "")
-            noteTitle = meeting.title ?? "Untitled Note"
+            noteTitle = meeting.title ?? "Untitled Meeting"
         }
         
         do {
@@ -206,7 +214,7 @@ struct SingleNoteView: View {
     }
     
     private func saveTitle() {
-        meeting.title = noteTitle.isEmpty ? "Untitled Note" : noteTitle
+        meeting.title = noteTitle.isEmpty ? "Untitled Meeting" : noteTitle
         
         do {
             try viewContext.save()
@@ -219,9 +227,9 @@ struct SingleNoteView: View {
         let lines = content.components(separatedBy: .newlines)
         if let firstLine = lines.first(where: { !$0.trimmingCharacters(in: .whitespaces).isEmpty }) {
             let title = String(firstLine.prefix(50))
-            return title.isEmpty ? "Untitled Note" : title
+            return title.isEmpty ? "Untitled Meeting" : title
         }
-        return "Untitled Note"
+        return "Untitled Meeting"
     }
     
     private func toggleRecording() {
@@ -230,6 +238,12 @@ struct SingleNoteView: View {
             isRecording = false
             // Update the note content with the transcript
             updateTranscript()
+            // Auto-analyze after recording
+            if !recordingService.currentTranscript.isEmpty {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                    enhanceWithAI()
+                }
+            }
         } else {
             recordingService.startRecordingSession()
             isRecording = true
@@ -284,18 +298,8 @@ struct SingleNoteView: View {
         }
     }
     
-    private func deleteNote() {
-        viewContext.delete(meeting)
-        do {
-            try viewContext.save()
-            dismiss()
-        } catch {
-            print("Failed to delete note: \(error)")
-        }
-    }
-    
     private func generateShareContent() -> String {
-        var content = meeting.title ?? "Note"
+        var content = meeting.title ?? "Meeting"
         content += "\n\n"
         content += noteContent
         content += "\n\n---\nGenerated by Vera"

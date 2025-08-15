@@ -39,7 +39,7 @@ struct NoteListView: View {
                     .onDelete(perform: deleteMeetings)
                 }
                 .listStyle(PlainListStyle())
-                .searchable(text: $searchText, prompt: "Search notes")
+                .searchable(text: $searchText, prompt: "Search meetings")
                 .navigationDestination(isPresented: $showingNote) {
                     if let meeting = selectedMeeting {
                         SingleNoteView(meeting: meeting)
@@ -64,7 +64,7 @@ struct NoteListView: View {
                     }
                 }
             }
-            .navigationTitle("Notes")
+            .navigationTitle("Meetings")
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     EditButton()
@@ -77,7 +77,7 @@ struct NoteListView: View {
         let newMeeting = Meeting(context: viewContext)
         newMeeting.id = UUID()
         newMeeting.date = Date()
-        newMeeting.title = "New Note"
+        newMeeting.title = "New Meeting"
         newMeeting.rawNotes = ""
         
         do {
@@ -85,7 +85,7 @@ struct NoteListView: View {
             selectedMeeting = newMeeting
             showingNote = true
         } catch {
-            print("Failed to create new note: \(error)")
+            print("Failed to create new meeting: \(error)")
         }
     }
     
