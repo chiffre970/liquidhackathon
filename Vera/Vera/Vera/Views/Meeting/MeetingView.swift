@@ -28,8 +28,7 @@ struct MeetingView: View {
                 VStack(spacing: 0) {
                     if recordingService.isRecording {
                         RecordingIndicatorView(
-                            duration: recordingService.recordingDuration,
-                            isPaused: recordingService.isPaused
+                            duration: recordingService.recordingDuration
                         )
                         .padding(.horizontal)
                         .padding(.top, 8)
@@ -149,22 +148,12 @@ struct MeetingView: View {
     }
     
     private var recordingControlsSection: some View {
-        HStack(spacing: 20) {
-            Button(action: togglePause) {
-                Image(systemName: recordingService.isPaused ? "play.fill" : "pause.fill")
-                    .font(.title2)
-                    .frame(width: 60, height: 60)
-                    .background(Color.gray.opacity(0.1))
-                    .clipShape(Circle())
-            }
-            
-            Button(action: { showTemplates = true }) {
-                Image(systemName: "doc.text")
-                    .font(.title2)
-                    .frame(width: 60, height: 60)
-                    .background(Color.gray.opacity(0.1))
-                    .clipShape(Circle())
-            }
+        Button(action: { showTemplates = true }) {
+            Image(systemName: "doc.text")
+                .font(.title2)
+                .frame(width: 60, height: 60)
+                .background(Color.gray.opacity(0.1))
+                .clipShape(Circle())
         }
         .padding()
         .background(Color.white)
@@ -241,18 +230,6 @@ struct MeetingView: View {
             
             print("📋 [MeetingView] Loaded meeting: \(meeting.title ?? "Untitled")")
             print("📝 [MeetingView] Transcript loaded: \(recordingService.currentTranscript.count) characters")
-        }
-    }
-    
-    private func togglePause() {
-        print("⏸️ [MeetingView] togglePause called - isPaused: \(recordingService.isPaused)")
-        
-        if recordingService.isPaused {
-            print("▶️ [MeetingView] Resuming recording")
-            recordingService.resumeRecording()
-        } else {
-            print("⏸️ [MeetingView] Pausing recording")
-            recordingService.pauseRecording()
         }
     }
     

@@ -78,14 +78,11 @@ class TranscriptionService: ObservableObject {
                 if let error = error {
                     let nsError = error as NSError
                     print("⚠️ [TranscriptionService] Recognition error: Code=\(nsError.code), \(error.localizedDescription)")
-                    // Don't stop on error 1101, it's a warning that can be ignored
-                    if nsError.code != 1101 {
-                        print("🛑 [TranscriptionService] Stopping due to error")
-                        self?.stopTranscribing()
-                    }
+                    // Don't stop automatically - only stop when user hits stop button
+                    // Ignore all errors and keep transcribing
                 } else if result?.isFinal == true {
                     print("✅ [TranscriptionService] Recognition final result received")
-                    self?.stopTranscribing()
+                    // Don't stop automatically - keep transcribing until user stops
                 }
             }
             
@@ -155,29 +152,39 @@ class TranscriptionService: ObservableObject {
         return await withCheckedContinuation { continuation in
             let request = SFSpeechURLRecognitionRequest(url: url)
             request.shouldReportPartialResults = false
-            request.requiresOnDeviceRecognition = true
+            request.requiresOnDeviceRecognition = true  // Force on-device recognition
             
             print("🔄 [TranscriptionService] Starting file recognition task...")
+            
+            var hasResumed = false
             let fileRecognitionTask = speechRecognizer.recognitionTask(with: request) { result, error in
+                // Prevent multiple resumes
+                guard !hasResumed else { return }
+                
+                if let result = result {
+                    let text = result.bestTranscription.formattedString
+                    if !text.isEmpty {
+                        print("✅ [TranscriptionService] File transcribed: \(text.count) characters")
+                        hasResumed = true
+                        continuation.resume(returning: text)
+                        return
+                    }
+                }
+                
                 if let error = error {
                     let nsError = error as NSError
-                    // Ignore error 1101 which is just a warning
-                    if nsError.code == 1101 {
-                        print("⚠️ [TranscriptionService] Ignoring error 1101 warning")
-                        if let result = result {
-                            let text = result.bestTranscription.formattedString
-                            print("✅ [TranscriptionService] File transcribed despite warning: \(text.count) characters")
-                            continuation.resume(returning: text)
-                        }
+                    // Check if we have a result despite the error
+                    if let result = result, !result.bestTranscription.formattedString.isEmpty {
+                        let text = result.bestTranscription.formattedString
+                        print("⚠️ [TranscriptionService] Got transcript despite error \(nsError.code): \(text.count) characters")
+                        hasResumed = true
+                        continuation.resume(returning: text)
                     } else {
                         print("❌ [TranscriptionService] File transcription error: \(error.localizedDescription)")
                         self.error = error
+                        hasResumed = true
                         continuation.resume(returning: nil)
                     }
-                } else if let result = result, result.isFinal {
-                    let text = result.bestTranscription.formattedString
-                    print("✅ [TranscriptionService] File transcribed: \(text.count) characters")
-                    continuation.resume(returning: text)
                 }
             }
             

@@ -38,8 +38,7 @@ struct SingleNoteView: View {
             // Recording indicator
             if recordingService.isRecording {
                 RecordingIndicatorView(
-                    duration: recordingService.recordingDuration,
-                    isPaused: recordingService.isPaused
+                    duration: recordingService.recordingDuration
                 )
                 .padding(.horizontal)
                 .padding(.vertical, 8)
@@ -54,13 +53,6 @@ struct SingleNoteView: View {
                         .foregroundColor(recordingService.isRecording ? .red : .blue)
                 }
                 
-                if recordingService.isRecording {
-                    Button(action: togglePause) {
-                        Image(systemName: recordingService.isPaused ? "play.circle" : "pause.circle")
-                            .font(.title)
-                            .foregroundColor(.blue)
-                    }
-                }
                 
                 Spacer()
                 
@@ -111,7 +103,27 @@ struct SingleNoteView: View {
                         isTitleEditing = false
                     }
                     .onTapGesture {
+                        // When tapped, if it's the default title, select all for easy replacement
                         isTitleEditing = true
+                        if noteTitle == "New Meeting" {
+                            // Clear the field when user taps on default title
+                            // This gives immediate visual feedback that they can type a new title
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                                noteTitle = ""
+                            }
+                        }
+                    }
+                    .onChange(of: noteTitle) { newValue in
+                        // Clear detection logic:
+                        // If the title was "New Meeting" and user is deleting characters
+                        // (newValue is "New Meetin", "New Meeti", etc.)
+                        // then clear the whole field to save them time
+                        if newValue.count > 0 && 
+                           newValue.count < "New Meeting".count &&
+                           "New Meeting".starts(with: newValue) {
+                            // User is backspacing through "New Meeting", clear it all
+                            noteTitle = ""
+                        }
                     }
                     .frame(maxWidth: 250)
             }
@@ -236,7 +248,7 @@ struct SingleNoteView: View {
         if recordingService.isRecording {
             recordingService.stopRecordingSession()
             isRecording = false
-            // Update the note content with the transcript
+            // Update transcript immediately with what we have
             updateTranscript()
             // Auto-analyze after recording
             if !recordingService.currentTranscript.isEmpty {
@@ -250,17 +262,14 @@ struct SingleNoteView: View {
         }
     }
     
-    private func togglePause() {
-        if recordingService.isPaused {
-            recordingService.resumeRecording()
-        } else {
-            recordingService.pauseRecording()
-        }
-    }
-    
     private func updateTranscript() {
         let transcript = recordingService.currentTranscript
-        guard !transcript.isEmpty else { return }
+        print("📋 [SingleNoteView] updateTranscript called with: '\(transcript)' (\(transcript.count) chars)")
+        
+        guard !transcript.isEmpty else { 
+            print("⚠️ [SingleNoteView] Transcript is empty, skipping update")
+            return 
+        }
         
         // Remove any existing transcript section
         let lines = noteContent.components(separatedBy: "\n--- Transcript ---\n")
@@ -272,9 +281,18 @@ struct SingleNoteView: View {
         }
         baseContent += "--- Transcript ---\n" + transcript
         
+        print("📝 [SingleNoteView] Updating noteContent with transcript, total length: \(baseContent.count)")
         noteContent = baseContent
         meeting.transcript = transcript
+        print("💾 [SingleNoteView] Saving transcript to meeting: '\(transcript)' (\(transcript.count) chars)")
         saveNote()
+        
+        // Auto-analyze after transcription
+        if !transcript.isEmpty {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                enhanceWithAI()
+            }
+        }
     }
     
     private func enhanceWithAI() {

@@ -6,18 +6,17 @@ import SwiftUI
 
 class MeetingRecordingService: ObservableObject {
     @Published var isRecording: Bool = false
-    @Published var isPaused: Bool = false
     @Published var currentTranscript: String = ""
     @Published var recordingDuration: TimeInterval = 0
     @Published var currentMeeting: Meeting?
     @Published var error: Error?
     
+    private var savedTranscript: String = ""  // Simple accumulation
+    
     private var audioRecorder: AudioRecorder
     private var transcriptionService: TranscriptionService
     private var timer: Timer?
     private var recordingStartTime: Date?
-    private var pausedDuration: TimeInterval = 0
-    private var lastPauseTime: Date?
     
     private var audioChunks: [URL] = []
     private var chunkTimer: Timer?
@@ -80,22 +79,13 @@ class MeetingRecordingService: ObservableObject {
         print("📊 [MeetingRecordingService] Current meeting ID: \(currentMeeting?.id.uuidString ?? "nil")")
         print("⏱️ [MeetingRecordingService] Recording duration: \(recordingDuration) seconds")
         
-        stopRecording()
-        
         if let meeting = currentMeeting {
             meeting.duration = recordingDuration
-            meeting.transcript = currentTranscript
             print("📝 [MeetingRecordingService] Updated meeting duration: \(meeting.duration)")
-            print("📝 [MeetingRecordingService] Saved transcript: \(currentTranscript.count) characters")
-            
-            // Clean up temporary audio chunks without saving
-            cleanupAudioChunks()
-            print("🧙 [MeetingRecordingService] Temporary audio files cleaned up")
             
             do {
                 try context.save()
                 print("✅ [MeetingRecordingService] Meeting saved successfully")
-                processInBackground(meeting: meeting)
             } catch {
                 self.error = error
                 print("❌ [MeetingRecordingService] Failed to save meeting: \(error)")
@@ -104,57 +94,46 @@ class MeetingRecordingService: ObservableObject {
             print("⚠️ [MeetingRecordingService] No current meeting to stop")
         }
         
+        // Stop recording - this will trigger async transcription
+        stopRecording()
+        
+        // Note: Transcript will be saved asynchronously after transcription completes
+        // The processInBackground will be called after transcription in the async task
+        
         cleanup()
         print("🧹 [MeetingRecordingService] Cleanup completed")
-    }
-    
-    func pauseRecording() {
-        guard isRecording && !isPaused else { return }
-        
-        isPaused = true
-        lastPauseTime = Date()
-        
-        if let currentChunkURL = audioRecorder.stopRecording() {
-            audioChunks.append(currentChunkURL)
-        }
-        
-        transcriptionService.stopTranscribing()
-        
-        timer?.invalidate()
-        chunkTimer?.invalidate()
-    }
-    
-    func resumeRecording() {
-        guard isRecording && isPaused else { return }
-        
-        if let pauseTime = lastPauseTime {
-            pausedDuration += Date().timeIntervalSince(pauseTime)
-        }
-        
-        isPaused = false
-        lastPauseTime = nil
-        
-        audioRecorder.startRecording()
-        transcriptionService.startTranscribing()
-        
-        startTimers()
     }
     
     private func startRecording() {
         print("🎙️ [MeetingRecordingService] startRecording called")
         
         isRecording = true
-        isPaused = false
         recordingStartTime = Date()
         recordingDuration = 0
-        pausedDuration = 0
         audioChunks = []
+        savedTranscript = ""  // Reset accumulation for new recording
         
         print("🎤 [MeetingRecordingService] Starting audio recorder...")
         audioRecorder.startRecording()
         
-        print("🗣️ [MeetingRecordingService] Starting transcription service...")
+        // Always use live transcription - simple as possible
+        print("🗣️ [MeetingRecordingService] Starting live transcription")
         transcriptionService.startTranscribing()
+        
+        // Subscribe to live updates with simple accumulation
+        transcriptionService.$transcribedText
+            .sink { [weak self] text in
+                guard let self = self else { return }
+                
+                // If text got shorter, save what we had and start fresh
+                if text.count < self.currentTranscript.count && !self.currentTranscript.isEmpty {
+                    self.savedTranscript = self.savedTranscript + (self.savedTranscript.isEmpty ? "" : " ") + self.currentTranscript
+                    print("📝 [MeetingRecordingService] Saved segment: \(self.savedTranscript.count) chars total")
+                }
+                
+                self.currentTranscript = text
+            }
+            .store(in: &cancellables)
         
         print("⏰ [MeetingRecordingService] Starting timers...")
         startTimers()
@@ -166,32 +145,43 @@ class MeetingRecordingService: ObservableObject {
         print("🛑 [MeetingRecordingService] stopRecording called")
         
         isRecording = false
-        isPaused = false
         
+        // Stop live transcription
+        print("🗣️ [MeetingRecordingService] Stopping live transcription")
+        transcriptionService.stopTranscribing()
+        
+        // Stop audio recorder
         print("🎤 [MeetingRecordingService] Stopping audio recorder...")
         if let currentChunkURL = audioRecorder.stopRecording() {
             audioChunks.append(currentChunkURL)
-            print("📁 [MeetingRecordingService] Added final chunk: \(currentChunkURL.lastPathComponent)")
+            print("📁 [MeetingRecordingService] Audio file: \(currentChunkURL.lastPathComponent)")
+            
+            // Clean up audio file immediately
+            try? FileManager.default.removeItem(at: currentChunkURL)
+            print("🧹 [MeetingRecordingService] Cleaned up audio file")
         }
-        
-        print("🗣️ [MeetingRecordingService] Stopping transcription...")
-        transcriptionService.stopTranscribing()
         
         print("⏰ [MeetingRecordingService] Invalidating timers...")
         timer?.invalidate()
         chunkTimer?.invalidate()
         
-        print("📊 [MeetingRecordingService] Total chunks collected: \(audioChunks.count)")
-        print("📝 [MeetingRecordingService] Final transcript length: \(currentTranscript.count) characters")
+        // Save any remaining transcript
+        if !currentTranscript.isEmpty {
+            savedTranscript = savedTranscript + (savedTranscript.isEmpty ? "" : " ") + currentTranscript
+        }
+        
+        // Use the accumulated transcript
+        currentTranscript = savedTranscript
+        
+        print("📊 [MeetingRecordingService] Recording stopped")
+        print("📝 [MeetingRecordingService] Final transcript: \(currentTranscript.count) characters")
     }
     
     private func startTimers() {
         timer = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { [weak self] _ in
             guard let self = self, let startTime = self.recordingStartTime else { return }
             
-            if !self.isPaused {
-                self.recordingDuration = Date().timeIntervalSince(startTime) - self.pausedDuration
-            }
+            self.recordingDuration = Date().timeIntervalSince(startTime)
         }
         
         chunkTimer = Timer.scheduledTimer(withTimeInterval: chunkInterval, repeats: true) { [weak self] _ in
@@ -200,36 +190,28 @@ class MeetingRecordingService: ObservableObject {
     }
     
     private func saveAudioChunk() {
-        guard isRecording && !isPaused else { 
-            print("⏸️ [MeetingRecordingService] Skipping chunk save - not recording or paused")
+        guard isRecording else { 
+            print("⏸️ [MeetingRecordingService] Skipping chunk save - not recording")
             return 
         }
         
         print("💾 [MeetingRecordingService] Processing audio chunk #\(audioChunks.count + 1)")
         
+        // Just save chunks for backup, don't interrupt live transcription
         if let currentChunkURL = audioRecorder.stopRecording() {
             audioChunks.append(currentChunkURL)
-            print("✅ [MeetingRecordingService] Chunk ready for transcription: \(currentChunkURL.lastPathComponent)")
+            print("✅ [MeetingRecordingService] Chunk saved: \(currentChunkURL.lastPathComponent)")
             
             print("🎤 [MeetingRecordingService] Restarting audio recorder for next chunk...")
             audioRecorder.startRecording()
             
+            // Delete the chunk immediately since we're using live transcription
             Task {
-                print("🔄 [MeetingRecordingService] Transcribing chunk...")
-                if let transcription = await transcriptionService.transcribeAudioFile(at: currentChunkURL) {
-                    await MainActor.run {
-                        let previousLength = self.currentTranscript.count
-                        self.currentTranscript += "\n" + transcription
-                        print("📝 [MeetingRecordingService] Added \(transcription.count) chars to transcript (total: \(self.currentTranscript.count))")
-                    }
-                }
-                
-                // Delete the temporary audio chunk after transcription
                 try? FileManager.default.removeItem(at: currentChunkURL)
                 print("🧙 [MeetingRecordingService] Deleted temporary chunk: \(currentChunkURL.lastPathComponent)")
             }
         } else {
-            print("❌ [MeetingRecordingService] Failed to process audio chunk")
+            print("❌ [MeetingRecordingService] Failed to save audio chunk")
         }
     }
     
@@ -310,8 +292,6 @@ class MeetingRecordingService: ObservableObject {
         // currentTranscript = ""  // Keep transcript visible after recording
         recordingDuration = 0
         recordingStartTime = nil
-        pausedDuration = 0
-        lastPauseTime = nil
         cleanupAudioChunks()
     }
     

@@ -45,16 +45,20 @@ class AudioRecorder: NSObject, ObservableObject {
         
         // Use temporary directory since we won't save the audio
         let tempPath = FileManager.default.temporaryDirectory
-        let audioFilename = tempPath.appendingPathComponent("temp_recording_\(Date().timeIntervalSince1970).m4a")
+        let audioFilename = tempPath.appendingPathComponent("temp_recording_\(Date().timeIntervalSince1970).wav")
         print("📁 [AudioRecorder] Recording temporarily to: \(audioFilename.lastPathComponent)")
         
+        // Use WAV format for better Speech API compatibility
         let settings: [String: Any] = [
-            AVFormatIDKey: Int(kAudioFormatMPEG4AAC),
-            AVSampleRateKey: 44100,
+            AVFormatIDKey: Int(kAudioFormatLinearPCM),
+            AVSampleRateKey: 16000,  // Speech API prefers 16kHz
             AVNumberOfChannelsKey: 1,
+            AVLinearPCMBitDepthKey: 16,
+            AVLinearPCMIsBigEndianKey: false,
+            AVLinearPCMIsFloatKey: false,
             AVEncoderAudioQualityKey: AVAudioQuality.high.rawValue
         ]
-        print("⚙️ [AudioRecorder] Audio settings: 44.1kHz, Mono, AAC High Quality")
+        print("⚙️ [AudioRecorder] Audio settings: 16kHz, Mono, Linear PCM (WAV)")
         
         do {
             audioRecorder = try AVAudioRecorder(url: audioFilename, settings: settings)

@@ -2,7 +2,6 @@ import SwiftUI
 
 struct RecordingIndicatorView: View {
     let duration: TimeInterval
-    let isPaused: Bool
     
     @State private var isAnimating = false
     
@@ -10,17 +9,17 @@ struct RecordingIndicatorView: View {
         HStack(spacing: 12) {
             HStack(spacing: 6) {
                 Circle()
-                    .fill(isPaused ? Color.orange : Color.red)
+                    .fill(Color.red)
                     .frame(width: 8, height: 8)
                     .scaleEffect(isAnimating ? 1.2 : 1.0)
                     .animation(
-                        isPaused ? .none : Animation.easeInOut(duration: 1.0).repeatForever(autoreverses: true),
+                        Animation.easeInOut(duration: 1.0).repeatForever(autoreverses: true),
                         value: isAnimating
                     )
                 
-                Text(isPaused ? "Paused" : "Recording")
+                Text("Recording")
                     .font(.system(size: 14, weight: .medium))
-                    .foregroundColor(isPaused ? .orange : .red)
+                    .foregroundColor(.red)
             }
             
             Spacer()
@@ -36,12 +35,7 @@ struct RecordingIndicatorView: View {
                 .fill(Color.red.opacity(0.1))
         )
         .onAppear {
-            if !isPaused {
-                isAnimating = true
-            }
-        }
-        .onChange(of: isPaused) { newValue in
-            isAnimating = !newValue
+            isAnimating = true
         }
     }
     
