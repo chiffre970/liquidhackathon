@@ -9,6 +9,7 @@ struct SingleNoteView: View {
     @State private var isRecording = false
     @State private var isEnhancing = false
     @State private var showingShareSheet = false
+    @State private var showingTranscript = false
     @FocusState private var isEditing: Bool
     @FocusState private var isTitleEditing: Bool
     
@@ -113,6 +114,14 @@ struct SingleNoteView: View {
             
             ToolbarItem(placement: .navigationBarTrailing) {
                 Menu {
+                    if let transcript = meeting.transcript, !transcript.isEmpty {
+                        Button(action: { 
+                            showingTranscript = true
+                        }) {
+                            Label("View Transcript", systemImage: "text.quote")
+                        }
+                    }
+                    
                     Button(action: { 
                         enhanceWithAI()
                     }) {
@@ -148,6 +157,9 @@ struct SingleNoteView: View {
         .sheet(isPresented: $showingShareSheet) {
             NoteShareSheet(content: generateShareContent())
         }
+        .sheet(isPresented: $showingTranscript) {
+            TranscriptView(meeting: meeting)
+        }
         .onReceive(NotificationCenter.default.publisher(for: Notification.Name("TranscriptUpdated"))) { _ in
             updateTranscript()
         }
@@ -164,18 +176,10 @@ struct SingleNoteView: View {
             content = notes
         }
         
-        // Add transcript if available
-        if let transcript = meeting.transcript, !transcript.isEmpty {
-            if !content.isEmpty {
-                content += "\n\n--- Transcript ---\n"
-            }
-            content += transcript
-        }
-        
-        // Add enhanced notes if available
+        // Add enhanced notes if available (but not transcript)
         if let enhanced = meeting.enhancedNotes, !enhanced.isEmpty {
             if !content.isEmpty {
-                content += "\n\n--- AI Summary ---\n"
+                content += "\n\n--- AI Analysis ---\n"
             }
             content += enhanced
         }
@@ -242,21 +246,15 @@ struct SingleNoteView: View {
             return 
         }
         
-        // Remove any existing transcript section
-        let lines = noteContent.components(separatedBy: "\n--- Transcript ---\n")
-        var baseContent = lines.first ?? noteContent
-        
-        // Add the new transcript
-        if !baseContent.isEmpty {
-            baseContent += "\n\n"
-        }
-        baseContent += "--- Transcript ---\n" + transcript
-        
-        print("📝 [SingleNoteView] Updating noteContent with transcript, total length: \(baseContent.count)")
-        noteContent = baseContent
+        // Save transcript to meeting model but don't add to note content
         meeting.transcript = transcript
         print("💾 [SingleNoteView] Saving transcript to meeting: '\(transcript)' (\(transcript.count) chars)")
-        saveNote()
+        
+        do {
+            try viewContext.save()
+        } catch {
+            print("Failed to save transcript: \(error)")
+        }
         
         // Auto-analyze after transcription
         if !transcript.isEmpty {

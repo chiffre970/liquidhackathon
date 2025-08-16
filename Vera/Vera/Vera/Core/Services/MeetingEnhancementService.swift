@@ -50,7 +50,7 @@ class MeetingEnhancementService {
             Meeting Transcript:
             \(transcript)
             
-            \(meeting.rawNotes != nil ? "User Notes: \(meeting.rawNotes!)\n" : "")
+            \(meeting.rawNotes != nil && !meeting.rawNotes!.isEmpty ? "User Notes: \(meeting.rawNotes!)\n" : "")
             
             Please provide:
             1. Executive Summary (2-3 sentences)
