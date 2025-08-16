@@ -1,9 +1,9 @@
 import Foundation
 
 struct LFM2Prompts {
-    // SINGLE comprehensive prompt for post-recording analysis
-    // This runs ONCE when user hits "End Recording"
-    static func meetingAnalysis(transcript: String, userNotes: String?) -> String {
+    // Unified comprehensive prompt for meeting analysis
+    // Used for post-recording analysis and insights generation
+    static func analyzeMeeting(transcript: String, userNotes: String?) -> String {
         """
         Analyze this complete meeting recording and provide comprehensive insights.
         
@@ -27,7 +27,10 @@ struct LFM2Prompts {
                 {"question": "unresolved question", "assignedTo": "person/team", "urgency": "high/medium/low"}
             ],
             "risks": ["identified risk 1", "identified risk 2"],
-            "followUp": ["item needing follow-up", ...]
+            "followUp": ["item needing follow-up", ...],
+            "criticalInfo": "any urgent matters or warnings",
+            "unresolvedTopics": ["topic requiring more discussion", ...],
+            "meetingEffectiveness": "productive/neutral/unproductive"
         }
         
         Important:
@@ -35,38 +38,8 @@ struct LFM2Prompts {
         - Identify decision makers when possible
         - Note any deadlines or time constraints
         - Flag critical items that need immediate attention
+        - Assess meeting productivity
         - Return ONLY valid JSON, no markdown or explanation
-        """
-    }
-    
-    // Enhanced summary prompt with better structure
-    static func generateEnhancedSummary(transcript: String, userNotes: String?) -> String {
-        """
-        Create a structured meeting summary from this transcript:
-        \(transcript)
-        
-        Additional Notes:
-        \(userNotes ?? "None")
-        
-        Generate a professional summary with:
-        1. Executive Summary (2-3 sentences capturing the essence)
-        2. Key Discussion Points (maximum 5, most important)
-        3. Outcomes and Next Steps
-        4. Critical Information or Warnings
-        5. Topics Requiring Follow-up
-        
-        Return as JSON:
-        {
-            "executiveSummary": "concise 2-3 sentence overview",
-            "keyPoints": ["point 1", "point 2", ...],
-            "outcomes": ["outcome 1", "outcome 2", ...],
-            "criticalInfo": "any urgent matters or warnings",
-            "unresolvedTopics": ["topic 1", "topic 2", ...],
-            "meetingEffectiveness": "productive/neutral/unproductive",
-            "suggestedFollowUp": "recommended next meeting focus"
-        }
-        
-        Return ONLY valid JSON, no explanation.
         """
     }
 }
@@ -81,6 +54,9 @@ extension LFM2Prompts {
         let questions: [Question]
         let risks: [Risk]
         let followUp: [FollowUpItem]
+        let criticalInfo: String?
+        let unresolvedTopics: [String]
+        let meetingEffectiveness: String
     }
     
     struct KeyPoint: Codable {
@@ -177,15 +153,5 @@ extension LFM2Prompts {
         let assignedTo: String?
         let urgency: String
         let needsFollowUp: Bool
-    }
-    
-    struct EnhancedSummaryResponse: Codable {
-        let executiveSummary: String
-        let keyPoints: [String]
-        let outcomes: [String]
-        let criticalInfo: String?
-        let unresolvedTopics: [String]
-        let meetingEffectiveness: String
-        let suggestedFollowUp: String
     }
 }

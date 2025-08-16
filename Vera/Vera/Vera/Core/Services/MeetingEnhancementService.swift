@@ -222,8 +222,8 @@ class MeetingEnhancementService {
     }
     
     func generateEnhancedSummary(transcript: String, notes: String?) async throws -> String {
-        // Use the comprehensive meeting analysis prompt from LFM2Prompts
-        let prompt = LFM2Prompts.meetingAnalysis(transcript: transcript, userNotes: notes)
+        // Use the unified meeting analysis prompt
+        let prompt = LFM2Prompts.analyzeMeeting(transcript: transcript, userNotes: notes)
         
         let response = try await lfm2Manager.generateJSON(
             prompt: prompt,
@@ -297,22 +297,28 @@ class MeetingEnhancementService {
     }
     
     func generateInsights(from transcript: String) async throws -> MeetingInsights {
-        // Use the enhanced summary prompt from LFM2Prompts
-        let prompt = LFM2Prompts.generateEnhancedSummary(transcript: transcript, userNotes: nil)
+        // Use the unified meeting analysis prompt
+        let prompt = LFM2Prompts.analyzeMeeting(transcript: transcript, userNotes: nil)
         
         let response = try await lfm2Manager.generateJSON(
             prompt: prompt,
             configuration: .summary,
-            responseType: LFM2Prompts.EnhancedSummaryResponse.self
+            responseType: LFM2Prompts.MeetingAnalysisResponse.self
         )
         
         return MeetingInsights(
             executiveSummary: response.executiveSummary,
-            keyPoints: response.keyPoints,
+            keyPoints: response.keyPoints.compactMap { keyPoint in
+                keyPoint.point ?? keyPoint.details
+            },
             criticalInfo: response.criticalInfo,
             unresolvedTopics: response.unresolvedTopics,
-            risks: [],  // Enhanced summary doesn't have risks field
-            followUpItems: response.outcomes  // Using outcomes as follow-up items
+            risks: response.risks.compactMap { risk in
+                risk.risk
+            },
+            followUpItems: response.followUp.compactMap { item in
+                item.item
+            }
         )
     }
     
