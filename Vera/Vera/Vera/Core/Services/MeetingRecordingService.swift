@@ -11,7 +11,9 @@ class MeetingRecordingService: ObservableObject {
     @Published var currentMeeting: Meeting?
     @Published var error: Error?
     
-    private var savedTranscript: String = ""  // Simple accumulation
+    private var fullTranscript: String = ""  // Keep the full accumulated transcript
+    private var transcriptSegments: [String] = []  // Store all segments
+    private var lastTranscriptLength: Int = 0      // Track for reset detection
     
     private var audioRecorder: AudioRecorder
     private var transcriptionService: TranscriptionService
@@ -36,7 +38,23 @@ class MeetingRecordingService: ObservableObject {
     private func setupSubscriptions() {
         transcriptionService.$transcribedText
             .sink { [weak self] text in
-                self?.currentTranscript = text
+                guard let self = self else { return }
+                
+                // Detect reset: significant drop in length
+                if self.lastTranscriptLength > 50 && text.count < self.lastTranscriptLength - 50 {
+                    // Save current segment before it's lost
+                    if !self.fullTranscript.isEmpty {
+                        self.transcriptSegments.append(self.fullTranscript)
+                        print("📝 [MeetingRecordingService] Saved segment (\(self.fullTranscript.count) chars) due to reset")
+                    }
+                    self.fullTranscript = text  // Start new segment
+                } else if text.count > self.fullTranscript.count {
+                    // Normal growth - update full transcript
+                    self.fullTranscript = text
+                }
+                
+                self.currentTranscript = text
+                self.lastTranscriptLength = text.count
             }
             .store(in: &cancellables)
         
@@ -111,7 +129,10 @@ class MeetingRecordingService: ObservableObject {
         recordingStartTime = Date()
         recordingDuration = 0
         audioChunks = []
-        savedTranscript = ""  // Reset accumulation for new recording
+        fullTranscript = ""  // Reset accumulation for new recording
+        currentTranscript = ""  // Clear current transcript too
+        transcriptSegments = []      // Clear segments
+        lastTranscriptLength = 0     // Reset tracker
         
         print("🎤 [MeetingRecordingService] Starting audio recorder...")
         audioRecorder.startRecording()
@@ -120,20 +141,7 @@ class MeetingRecordingService: ObservableObject {
         print("🗣️ [MeetingRecordingService] Starting live transcription")
         transcriptionService.startTranscribing()
         
-        // Subscribe to live updates with simple accumulation
-        transcriptionService.$transcribedText
-            .sink { [weak self] text in
-                guard let self = self else { return }
-                
-                // If text got shorter, save what we had and start fresh
-                if text.count < self.currentTranscript.count && !self.currentTranscript.isEmpty {
-                    self.savedTranscript = self.savedTranscript + (self.savedTranscript.isEmpty ? "" : " ") + self.currentTranscript
-                    print("📝 [MeetingRecordingService] Saved segment: \(self.savedTranscript.count) chars total")
-                }
-                
-                self.currentTranscript = text
-            }
-            .store(in: &cancellables)
+        // Note: Subscription is handled in setupSubscriptions() - no duplicate needed here
         
         print("⏰ [MeetingRecordingService] Starting timers...")
         startTimers()
@@ -165,13 +173,20 @@ class MeetingRecordingService: ObservableObject {
         timer?.invalidate()
         chunkTimer?.invalidate()
         
-        // Save any remaining transcript
-        if !currentTranscript.isEmpty {
-            savedTranscript = savedTranscript + (savedTranscript.isEmpty ? "" : " ") + currentTranscript
+        // Save final segment if we have one
+        if !fullTranscript.isEmpty {
+            transcriptSegments.append(fullTranscript)
+            print("📝 [MeetingRecordingService] Saved final segment (\(fullTranscript.count) chars)")
         }
         
-        // Use the accumulated transcript
-        currentTranscript = savedTranscript
+        // Combine all segments
+        if !transcriptSegments.isEmpty {
+            fullTranscript = transcriptSegments.joined(separator: " ")
+            print("📝 [MeetingRecordingService] Combined \(transcriptSegments.count) segments into \(fullTranscript.count) chars")
+        }
+        
+        // Use the full accumulated transcript
+        currentTranscript = fullTranscript
         
         print("📊 [MeetingRecordingService] Recording stopped")
         print("📝 [MeetingRecordingService] Final transcript: \(currentTranscript.count) characters")
@@ -228,8 +243,9 @@ class MeetingRecordingService: ObservableObject {
         Task {
             print("🔄 [MeetingRecordingService] Starting background processing for meeting: \(meeting.id)")
             
-            if !currentTranscript.isEmpty {
-                meeting.transcript = currentTranscript
+            // Use the full transcript we accumulated
+            if !fullTranscript.isEmpty {
+                meeting.transcript = fullTranscript
             }
             
             // No audio file to transcribe since we only save the transcript
@@ -333,8 +349,11 @@ extension MeetingRecordingService {
     func createNewMeeting() {
         print("🆕 [MeetingRecordingService] Creating new meeting")
         
-        // Clear transcript when starting a new meeting
+        // Clear transcripts when starting a new meeting
         currentTranscript = ""
+        fullTranscript = ""
+        transcriptSegments = []
+        lastTranscriptLength = 0
         
         let meeting = Meeting(context: context)
         meeting.id = UUID()

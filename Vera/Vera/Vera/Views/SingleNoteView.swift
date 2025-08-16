@@ -7,7 +7,6 @@ struct SingleNoteView: View {
     @State private var noteContent: String = ""
     @State private var noteTitle: String = ""
     @State private var isRecording = false
-    @State private var showingEnhanceAlert = false
     @State private var isEnhancing = false
     @State private var showingShareSheet = false
     @FocusState private var isEditing: Bool
@@ -64,22 +63,6 @@ struct SingleNoteView: View {
                     .font(.body.bold())
                     .foregroundColor(.blue)
                 }
-                
-                // AI Enhance button (only show if there's content)
-                if !noteContent.isEmpty || meeting.transcript != nil {
-                    Button(action: { showingEnhanceAlert = true }) {
-                        HStack {
-                            Image(systemName: "sparkles")
-                            Text("Analyze")
-                        }
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 6)
-                        .background(Color.blue)
-                        .foregroundColor(.white)
-                        .cornerRadius(8)
-                    }
-                    .disabled(isEnhancing)
-                }
             }
             .padding()
             .background(Color(UIColor.systemBackground))
@@ -131,10 +114,11 @@ struct SingleNoteView: View {
             ToolbarItem(placement: .navigationBarTrailing) {
                 Menu {
                     Button(action: { 
-                        showingEnhanceAlert = true 
+                        enhanceWithAI()
                     }) {
                         Label("Reanalyze with AI", systemImage: "sparkles")
                     }
+                    .disabled(isEnhancing)
                     
                     Button(action: { 
                         showingShareSheet = true 
@@ -160,14 +144,6 @@ struct SingleNoteView: View {
             if recordingService.isRecording {
                 recordingService.stopRecordingSession()
             }
-        }
-        .alert("Enhance with AI?", isPresented: $showingEnhanceAlert) {
-            Button("Cancel", role: .cancel) { }
-            Button("Analyze") {
-                enhanceWithAI()
-            }
-        } message: {
-            Text("This will use AI to create a structured summary and extract key insights from your meeting.")
         }
         .sheet(isPresented: $showingShareSheet) {
             NoteShareSheet(content: generateShareContent())

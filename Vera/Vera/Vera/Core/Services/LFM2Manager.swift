@@ -19,7 +19,7 @@ class LFM2Manager: ObservableObject {
         
         static let summary = ModelConfiguration(
             maxTokens: 2048,
-            temperature: 0.7,
+            temperature: 0.3,
             topP: 0.9,
             streamingEnabled: true
         )
