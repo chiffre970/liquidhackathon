@@ -89,20 +89,55 @@ class LFM2Manager: ObservableObject {
         
         // Optimize for device memory
         await optimizeForDevice()
+        
+        // Warmup the model immediately after loading
+        await warmupModel()
     }
     
     func warmupModel() async {
-        guard isModelLoaded else { return }
+        guard isModelLoaded, let runner = modelRunner else { return }
         
-        _ = try? await generate(
-            prompt: "Hello",
-            configuration: ModelConfiguration(
-                maxTokens: 5,
-                temperature: 0.5,
-                topP: 0.9,
-                streamingEnabled: false
-            )
+        print("🔥 Warming up model...")
+        
+        // Simple warmup without full generate flow
+        let systemMessage = ChatMessage(
+            role: .system,
+            content: [.text("You are a helpful assistant.")]
         )
+        
+        let userMessage = ChatMessage(
+            role: .user,
+            content: [.text("Hello")]
+        )
+        
+        let conversation = Conversation(
+            modelRunner: runner,
+            history: [systemMessage]
+        )
+        
+        // Just generate a few tokens to warm up
+        var tokenCount = 0
+        let responseStream = conversation.generateResponse(message: userMessage)
+        
+        do {
+            for try await response in responseStream {
+                switch response {
+                case .chunk(_):
+                    tokenCount += 1
+                    if tokenCount >= 5 {
+                        // Stop after a few tokens for warmup
+                        return
+                    }
+                case .complete(_, _):
+                    break
+                default:
+                    break
+                }
+            }
+        } catch {
+            print("⚠️ Warmup failed (non-critical): \(error)")
+        }
+        
         print("🔥 Model warmed up")
     }
     
@@ -134,6 +169,8 @@ class LFM2Manager: ObservableObject {
         
         // Generate response (collect all chunks)
         var fullResponse = ""
+        var tokenCount = 0
+        let maxTokens = configuration.maxTokens
         let responseStream = conversation.generateResponse(message: userMessage)
         
         do {
@@ -141,11 +178,19 @@ class LFM2Manager: ObservableObject {
                 switch response {
                 case .chunk(let text):
                     fullResponse += text
+                    tokenCount += text.split(separator: " ").count // Rough token estimate
+                    
+                    // Stop if we've reached max tokens
+                    if tokenCount >= maxTokens {
+                        print("📊 Reached max tokens limit: \(maxTokens)")
+                        break
+                    }
                 case .reasoningChunk(_):
                     // Ignore reasoning chunks for now
                     break
                 case .complete(_, _):
                     // Response is complete
+                    print("✅ Generation complete: \(fullResponse.count) characters")
                     break
                 @unknown default:
                     // Handle any future cases
@@ -154,6 +199,11 @@ class LFM2Manager: ObservableObject {
             }
         } catch {
             throw LFM2Error.generationFailed("Stream error: \(error)")
+        }
+        
+        if fullResponse.isEmpty {
+            print("⚠️ Empty response generated - retrying with longer timeout")
+            throw LFM2Error.generationFailed("Empty response")
         }
         
         return fullResponse

@@ -108,15 +108,19 @@ class MeetingRecordingService: ObservableObject {
                 self.error = error
                 print("❌ [MeetingRecordingService] Failed to save meeting: \(error)")
             }
+            
+            // Stop recording first to get the final transcript
+            stopRecording()
+            
+            // Save the transcript to the meeting
+            meeting.transcript = fullTranscript
+            
+            // Process the meeting with AI analysis
+            processInBackground(meeting: meeting)
         } else {
             print("⚠️ [MeetingRecordingService] No current meeting to stop")
+            stopRecording()
         }
-        
-        // Stop recording - this will trigger async transcription
-        stopRecording()
-        
-        // Note: Transcript will be saved asynchronously after transcription completes
-        // The processInBackground will be called after transcription in the async task
         
         cleanup()
         print("🧹 [MeetingRecordingService] Cleanup completed")
