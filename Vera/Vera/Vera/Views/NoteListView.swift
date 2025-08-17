@@ -103,7 +103,7 @@ struct NoteListView: View {
 }
 
 struct NoteRowView: View {
-    let meeting: Meeting
+    @ObservedObject var meeting: Meeting
     
     private var preview: String {
         if let notes = meeting.rawNotes, !notes.isEmpty {

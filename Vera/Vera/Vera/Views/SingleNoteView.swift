@@ -114,6 +114,9 @@ struct SingleNoteView: View {
                            "New Meeting".starts(with: newValue) {
                             // User is backspacing through "New Meeting", clear it all
                             noteTitle = ""
+                        } else {
+                            // Save title immediately on every change
+                            saveTitle()
                         }
                     }
                     .frame(maxWidth: 250)
@@ -222,8 +225,13 @@ struct SingleNoteView: View {
     private func saveTitle() {
         meeting.title = noteTitle.isEmpty ? "Untitled Meeting" : noteTitle
         
+        // Trigger immediate update
+        meeting.objectWillChange.send()
+        
         do {
             try viewContext.save()
+            // Force refresh of the fetch request
+            viewContext.refresh(meeting, mergeChanges: true)
         } catch {
             print("Failed to save title: \(error)")
         }
