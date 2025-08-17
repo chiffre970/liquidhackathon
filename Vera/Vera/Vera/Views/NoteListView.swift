@@ -117,30 +117,28 @@ struct NoteRowView: View {
     
     private var dateString: String {
         let formatter = DateFormatter()
-        formatter.dateStyle = .medium
-        formatter.timeStyle = .none
+        formatter.dateFormat = "dd/MM/yy"
         return formatter.string(from: meeting.date ?? Date())
     }
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            HStack {
+        HStack(alignment: .center, spacing: 12) {
+            VStack(alignment: .leading, spacing: 4) {
                 Text(meeting.title ?? "Untitled")
                     .font(.headline)
                     .lineLimit(1)
                 
-                Spacer()
-                
-                Text(dateString)
-                    .font(.caption)
+                Text(preview)
+                    .font(.subheadline)
                     .foregroundColor(.secondary)
+                    .lineLimit(2)
+                    .multilineTextAlignment(.leading)
             }
+            .frame(maxWidth: .infinity, alignment: .leading)
             
-            Text(preview)
-                .font(.subheadline)
+            Text(dateString)
+                .font(.caption)
                 .foregroundColor(.secondary)
-                .lineLimit(2)
-                .multilineTextAlignment(.leading)
         }
         .padding(.vertical, 4)
     }
