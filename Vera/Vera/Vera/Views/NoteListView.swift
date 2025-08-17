@@ -35,7 +35,7 @@ struct NoteListView: View {
                         NavigationLink(destination: SingleNoteView(meeting: meeting)) {
                             NoteRowView(meeting: meeting)
                         }
-                        .id(meeting.objectID)  // Use Core Data's objectID for stable identity
+                        .id(meeting.objectID)
                     }
                     .onDelete(perform: deleteMeetings)
                 }
@@ -91,47 +91,15 @@ struct NoteListView: View {
     }
     
     private func deleteMeetings(offsets: IndexSet) {
-        print("🗑️ [DELETE] Starting deletion with offsets: \(offsets)")
-        
         withAnimation {
-            for index in offsets {
-                print("🗑️ [DELETE] Processing index: \(index)")
-                
-                // Safety check for array bounds
-                guard index < filteredMeetings.count else {
-                    print("❌ [DELETE] Index \(index) out of bounds (count: \(filteredMeetings.count))")
-                    continue
-                }
-                
-                let meeting = filteredMeetings[index]
-                print("🗑️ [DELETE] Deleting meeting: \(meeting.title.isEmpty ? "Untitled" : meeting.title) with ID: \(meeting.id.uuidString)")
-                
-                // Check if meeting is valid before deletion
-                if meeting.isFault {
-                    print("⚠️ [DELETE] Meeting is a fault, refreshing...")
-                    viewContext.refresh(meeting, mergeChanges: false)
-                }
-                
-                viewContext.delete(meeting)
-                print("✅ [DELETE] Meeting marked for deletion")
-            }
+            offsets.map { filteredMeetings[$0] }.forEach(viewContext.delete)
             
             do {
-                print("💾 [DELETE] Saving context...")
                 try viewContext.save()
-                print("✅ [DELETE] Context saved successfully")
-            } catch let error as NSError {
-                print("❌ [DELETE] Failed to save after deletion:")
-                print("   Error: \(error.localizedDescription)")
-                print("   User Info: \(error.userInfo)")
-                
-                // Try to rollback if save fails
-                viewContext.rollback()
-                print("🔄 [DELETE] Context rolled back")
+            } catch {
+                print("Failed to delete meetings: \(error)")
             }
         }
-        
-        print("🗑️ [DELETE] Deletion process completed")
     }
 }
 
@@ -139,7 +107,6 @@ struct NoteRowView: View {
     @ObservedObject var meeting: Meeting
     
     private var preview: String {
-        // Check if meeting is deleted or faulted
         if meeting.isDeleted || meeting.isFault {
             return "No content"
         }
@@ -153,7 +120,6 @@ struct NoteRowView: View {
     }
     
     private var dateString: String {
-        // Check if meeting is deleted before accessing properties
         guard !meeting.isDeleted && !meeting.isFault else {
             return ""
         }
@@ -163,7 +129,6 @@ struct NoteRowView: View {
     }
     
     var body: some View {
-        // Don't render if meeting is deleted
         if meeting.isDeleted {
             EmptyView()
         } else {
