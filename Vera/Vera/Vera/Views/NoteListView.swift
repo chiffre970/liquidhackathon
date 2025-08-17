@@ -17,7 +17,7 @@ struct NoteListView: View {
             return Array(meetings)
         } else {
             return meetings.filter { meeting in
-                let title = meeting.title ?? ""
+                let title = meeting.title
                 let notes = meeting.rawNotes ?? ""
                 let transcript = meeting.transcript ?? ""
                 return title.localizedCaseInsensitiveContains(searchText) ||
@@ -35,6 +35,7 @@ struct NoteListView: View {
                         NavigationLink(destination: SingleNoteView(meeting: meeting)) {
                             NoteRowView(meeting: meeting)
                         }
+                        .id(meeting.objectID)  // Use Core Data's objectID for stable identity
                     }
                     .onDelete(perform: deleteMeetings)
                 }
@@ -90,15 +91,47 @@ struct NoteListView: View {
     }
     
     private func deleteMeetings(offsets: IndexSet) {
+        print("🗑️ [DELETE] Starting deletion with offsets: \(offsets)")
+        
         withAnimation {
-            offsets.map { filteredMeetings[$0] }.forEach(viewContext.delete)
+            for index in offsets {
+                print("🗑️ [DELETE] Processing index: \(index)")
+                
+                // Safety check for array bounds
+                guard index < filteredMeetings.count else {
+                    print("❌ [DELETE] Index \(index) out of bounds (count: \(filteredMeetings.count))")
+                    continue
+                }
+                
+                let meeting = filteredMeetings[index]
+                print("🗑️ [DELETE] Deleting meeting: \(meeting.title.isEmpty ? "Untitled" : meeting.title) with ID: \(meeting.id.uuidString)")
+                
+                // Check if meeting is valid before deletion
+                if meeting.isFault {
+                    print("⚠️ [DELETE] Meeting is a fault, refreshing...")
+                    viewContext.refresh(meeting, mergeChanges: false)
+                }
+                
+                viewContext.delete(meeting)
+                print("✅ [DELETE] Meeting marked for deletion")
+            }
             
             do {
+                print("💾 [DELETE] Saving context...")
                 try viewContext.save()
-            } catch {
-                print("Failed to delete meetings: \(error)")
+                print("✅ [DELETE] Context saved successfully")
+            } catch let error as NSError {
+                print("❌ [DELETE] Failed to save after deletion:")
+                print("   Error: \(error.localizedDescription)")
+                print("   User Info: \(error.userInfo)")
+                
+                // Try to rollback if save fails
+                viewContext.rollback()
+                print("🔄 [DELETE] Context rolled back")
             }
         }
+        
+        print("🗑️ [DELETE] Deletion process completed")
     }
 }
 
@@ -106,6 +139,10 @@ struct NoteRowView: View {
     @ObservedObject var meeting: Meeting
     
     private var preview: String {
+        // Check if meeting is deleted or faulted
+        if meeting.isDeleted || meeting.isFault {
+            return "No content"
+        }
         if let notes = meeting.rawNotes, !notes.isEmpty {
             return notes
         } else if let transcript = meeting.transcript, !transcript.isEmpty {
@@ -116,15 +153,23 @@ struct NoteRowView: View {
     }
     
     private var dateString: String {
+        // Check if meeting is deleted before accessing properties
+        guard !meeting.isDeleted && !meeting.isFault else {
+            return ""
+        }
         let formatter = DateFormatter()
         formatter.dateFormat = "dd/MM/yy"
-        return formatter.string(from: meeting.date ?? Date())
+        return formatter.string(from: meeting.date)
     }
     
     var body: some View {
+        // Don't render if meeting is deleted
+        if meeting.isDeleted {
+            EmptyView()
+        } else {
         HStack(alignment: .center, spacing: 12) {
             VStack(alignment: .leading, spacing: 4) {
-                Text(meeting.title ?? "Untitled")
+                Text(meeting.title.isEmpty ? "Untitled" : meeting.title)
                     .font(.headline)
                     .lineLimit(1)
                 
@@ -141,5 +186,6 @@ struct NoteRowView: View {
                 .foregroundColor(.secondary)
         }
         .padding(.vertical, 4)
+        }
     }
 }
