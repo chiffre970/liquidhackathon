@@ -7,6 +7,7 @@ import CoreData
 class MeetingEnhancementService {
     static let shared = MeetingEnhancementService()
     private let lfm2Manager = LFM2Manager.shared
+    private let promptService = AdaptivePromptService.shared
     private let enhancementQueue = DispatchQueue(label: "com.vera.enhancement", qos: .background)
     
     private init() {}
@@ -33,35 +34,47 @@ class MeetingEnhancementService {
                 try await lfm2Manager.loadModel()
             }
             
-            // Simple text prompt for meeting summary
-            let prompt = """
-            Analyze this meeting transcript and provide a comprehensive summary.
+            // Step 1: Analyze what elements would be helpful to extract
+            let analysisPrompt = promptService.generateAnalysisPrompt(
+                transcript: transcript,
+                userNotes: meeting.rawNotes
+            )
             
-            Meeting Transcript:
-            \(transcript)
-            
-            \(meeting.rawNotes != nil && !meeting.rawNotes!.isEmpty ? "User Notes: \(meeting.rawNotes!)\n" : "")
-            
-            Please provide:
-            1. Executive Summary (2-3 sentences)
-            2. Key Points Discussed
-            3. Action Items (if any)
-            4. Decisions Made (if any)
-            5. Follow-up Required (if any)
-            
-            Format your response as clear, readable text with sections.
-            """
-            
-            // Get text response from LFM2
             let config = LFM2Manager.ModelConfiguration(
-                maxTokens: 1000,
-                temperature: 0.7,
+                maxTokens: 200,  // Short response for element list
+                temperature: 0.3,  // Lower temperature for more consistent analysis
                 topP: 0.9,
                 streamingEnabled: false
             )
-            let analysisText = try await lfm2Manager.generate(
-                prompt: prompt,
+            
+            print("📊 Step 1: Analyzing content to determine relevant elements...")
+            let elementsResponse = try await lfm2Manager.generate(
+                prompt: analysisPrompt,
                 configuration: config
+            )
+            
+            // Parse which elements to extract
+            let elementsToExtract = promptService.parseElementsToExtract(from: elementsResponse)
+            print("   Elements to extract: \(elementsToExtract.map { $0.rawValue }.joined(separator: ", "))")
+            
+            // Step 2: Extract only the identified elements
+            let extractionPrompt = promptService.generateExtractionPrompt(
+                transcript: transcript,
+                userNotes: meeting.rawNotes,
+                elementsToExtract: elementsToExtract
+            )
+            
+            let extractionConfig = LFM2Manager.ModelConfiguration(
+                maxTokens: 1000,
+                temperature: 0.5,  // Balanced temperature for extraction
+                topP: 0.9,
+                streamingEnabled: false
+            )
+            
+            print("📝 Step 2: Extracting relevant content...")
+            let analysisText = try await lfm2Manager.generate(
+                prompt: extractionPrompt,
+                configuration: extractionConfig
             )
             
             // Save the analysis as enhanced notes
