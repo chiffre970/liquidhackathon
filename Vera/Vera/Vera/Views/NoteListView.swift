@@ -153,7 +153,8 @@ struct NoteRowView: View {
                 .font(.caption)
                 .foregroundColor(.secondary)
         }
-        .padding(.vertical, 4)
+        .frame(height: 65)
+        .frame(maxWidth: .infinity)
         }
     }
 }
