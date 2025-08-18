@@ -50,19 +50,29 @@ struct NoteListView: View {
                 // New Note Button (floating)
                 VStack {
                     Spacer()
-                    HStack {
-                        Spacer()
-                        Button(action: createNewNote) {
-                            Image(systemName: "square.and.pencil")
+                    Button(action: createNewNote) {
+                        HStack(spacing: 12) {
+                            Image(systemName: "plus.circle.fill")
                                 .font(.title2)
-                                .foregroundColor(.white)
-                                .frame(width: 56, height: 56)
-                                .background(Color.blue)
-                                .clipShape(Circle())
-                                .shadow(radius: 4)
+                            Text("New Meeting")
+                                .font(.headline)
+                                .fontWeight(.semibold)
                         }
-                        .padding()
+                        .foregroundColor(.white)
+                        .padding(.horizontal, 24)
+                        .padding(.vertical, 16)
+                        .background(
+                            LinearGradient(
+                                gradient: Gradient(colors: [Color.blue, Color.blue.opacity(0.8)]),
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            )
+                        )
+                        .clipShape(Capsule())
+                        .shadow(color: .black.opacity(0.2), radius: 10, x: 0, y: 5)
+                        .shadow(color: .blue.opacity(0.3), radius: 20, x: 0, y: 10)
                     }
+                    .padding(.bottom, 30)
                 }
             }
             .navigationTitle("Meetings")
