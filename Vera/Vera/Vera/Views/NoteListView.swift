@@ -30,21 +30,78 @@ struct NoteListView: View {
     var body: some View {
         NavigationStack {
             ZStack {
-                List {
-                    ForEach(filteredMeetings) { meeting in
-                        NavigationLink(destination: SingleNoteView(meeting: meeting)) {
-                            NoteRowView(meeting: meeting)
+                // Background with inner shadow
+                Color.primaryBackground
+                    .ignoresSafeArea()
+                    .overlay(
+                        // Inner shadow effect
+                        Rectangle()
+                            .fill(
+                                LinearGradient(
+                                    gradient: Gradient(stops: [
+                                        .init(color: Color.white.opacity(0.05), location: 0),
+                                        .init(color: Color.clear, location: 0.1)
+                                    ]),
+                                    startPoint: .topLeading,
+                                    endPoint: .bottomTrailing
+                                )
+                            )
+                            .blur(radius: 20)
+                            .ignoresSafeArea()
+                    )
+                
+                VStack(spacing: 0) {
+                    // Custom Search Bar
+                    HStack {
+                        Image(systemName: "magnifyingglass")
+                            .foregroundColor(Color.gray.opacity(0.5))
+                        
+                        TextField("Search meetings", text: $searchText)
+                            .textFieldStyle(PlainTextFieldStyle())
+                            .foregroundColor(Color(hex: "#D3E3F0"))
+                        
+                        if !searchText.isEmpty {
+                            Button(action: { searchText = "" }) {
+                                Image(systemName: "xmark.circle.fill")
+                                    .foregroundColor(Color.gray.opacity(0.5))
+                            }
                         }
-                        .id(meeting.objectID)
-                        .listRowSeparatorTint(.gray.opacity(0.3))
-                        .listRowSeparator(.visible, edges: .bottom)
-                        .alignmentGuide(.listRowSeparatorLeading) { _ in 0 }
-                        .alignmentGuide(.listRowSeparatorTrailing) { d in d.width - 16 }
                     }
-                    .onDelete(perform: deleteMeetings)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 8)
+                    .background(Color.primaryBackground.opacity(0.8))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 10)
+                            .stroke(Color.white.opacity(0.05), lineWidth: 1)
+                    )
+                    .cornerRadius(10)
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 8)
+                    
+                    // List content (no divider under search)
+                    List {
+                        ForEach(filteredMeetings) { meeting in
+                            NavigationLink(destination: SingleNoteView(meeting: meeting)) {
+                                NoteRowView(meeting: meeting)
+                            }
+                            .id(meeting.objectID)
+                            .listRowInsets(EdgeInsets(top: 0, leading: 16, bottom: 0, trailing: 16))
+                            .listRowSeparator(.hidden)
+                            .overlay(
+                                // Custom separator matching search bar width
+                                Rectangle()
+                                    .fill(Color.gray.opacity(0.3))
+                                    .frame(height: 0.5)
+                                    .padding(.horizontal, 0),
+                                alignment: .bottom
+                            )
+                        }
+                        .onDelete(perform: deleteMeetings)
+                    }
+                    .listStyle(PlainListStyle())
+                    .scrollContentBackground(.hidden)
+                    .background(Color.clear)
                 }
-                .listStyle(PlainListStyle())
-                .searchable(text: $searchText, prompt: "Search meetings")
                 .navigationDestination(isPresented: $showingNote) {
                     if let meeting = selectedMeeting {
                         SingleNoteView(meeting: meeting)
@@ -63,6 +120,10 @@ struct NoteListView: View {
                 }
             }
             .navigationTitle("Meetings")
+            .onAppear {
+                UINavigationBar.appearance().largeTitleTextAttributes = [.foregroundColor: UIColor(Color.primaryText)]
+                UINavigationBar.appearance().titleTextAttributes = [.foregroundColor: UIColor(Color.primaryText)]
+            }
         }
     }
     
@@ -129,12 +190,13 @@ struct NoteRowView: View {
             VStack(alignment: .leading, spacing: 4) {
                 Text(meeting.title.isEmpty ? "Untitled" : meeting.title)
                     .font(.headline)
+                    .foregroundColor(.primaryText)
                     .lineLimit(1)
                 
                 if !preview.isEmpty {
                     Text(preview)
                         .font(.subheadline)
-                        .foregroundColor(.secondary)
+                        .foregroundColor(.secondaryText)
                         .lineLimit(2)
                         .multilineTextAlignment(.leading)
                 }
@@ -143,8 +205,9 @@ struct NoteRowView: View {
             
             Text(dateString)
                 .font(.caption)
-                .foregroundColor(.secondary)
+                .foregroundColor(.secondaryText)
         }
+        .padding(.horizontal, 8)  // Add internal padding to move content inward
         .frame(height: 65)
         .frame(maxWidth: .infinity)
         }

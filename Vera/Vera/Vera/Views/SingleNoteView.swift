@@ -26,10 +26,33 @@ struct SingleNoteView: View {
     }
     
     var body: some View {
-        VStack(spacing: 0) {
+        ZStack {
+            // Background with inner shadow
+            Color.primaryBackground
+                .ignoresSafeArea()
+                .overlay(
+                    // Inner shadow effect
+                    Rectangle()
+                        .fill(
+                            LinearGradient(
+                                gradient: Gradient(stops: [
+                                    .init(color: Color.white.opacity(0.05), location: 0),
+                                    .init(color: Color.clear, location: 0.1)
+                                ]),
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            )
+                        )
+                        .blur(radius: 20)
+                        .ignoresSafeArea()
+                )
+            
+            VStack(spacing: 0) {
             // Note content - show markdown rendered or editor
             if isEditingMode {
                 TextEditor(text: $noteContent)
+                    .foregroundColor(.primaryText)
+                    .scrollContentBackground(.hidden)
                     .padding(.horizontal, 16)
                     .padding(.top, 8)
                     .focused($isEditing)
@@ -42,11 +65,13 @@ struct SingleNoteView: View {
                         if let attributedString = try? AttributedString(markdown: noteContent, 
                                                                         options: AttributedString.MarkdownParsingOptions(interpretedSyntax: .inlineOnlyPreservingWhitespace)) {
                             Text(attributedString)
+                                .foregroundColor(.primaryText)
                                 .padding(.horizontal, 16)
                                 .padding(.top, 8)
                                 .frame(maxWidth: .infinity, alignment: .leading)
                         } else {
                             Text(noteContent)
+                                .foregroundColor(.primaryText)
                                 .padding(.horizontal, 16)
                                 .padding(.top, 8)
                                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -74,8 +99,8 @@ struct SingleNoteView: View {
                 .background(Color.red.opacity(0.1))
                 .cornerRadius(8)
             }
-        }
-        .overlay(
+            }
+            .overlay(
             // Floating Record Button
             VStack {
                 Spacer()
@@ -108,11 +133,13 @@ struct SingleNoteView: View {
                 Spacer()
             }
         )
+        }
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .principal) {
                 TextField("Meeting Title", text: $noteTitle)
                     .font(.headline)
+                    .foregroundColor(.primaryText)
                     .multilineTextAlignment(.center)
                     .textFieldStyle(.plain)
                     .focused($isTitleEditing)
