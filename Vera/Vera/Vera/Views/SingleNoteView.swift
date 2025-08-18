@@ -84,21 +84,13 @@ struct SingleNoteView: View {
                         .foregroundColor(recordingService.isRecording ? .red : .blue)
                 }
                 
-                
                 Spacer()
                 
-                // Done/Edit button
+                // Done button only shows when editing
                 if isEditingMode {
                     Button("Done") {
                         isEditing = false
                         isEditingMode = false
-                    }
-                    .font(.body.bold())
-                    .foregroundColor(.blue)
-                } else {
-                    Button("Edit") {
-                        isEditingMode = true
-                        isEditing = true
                     }
                     .font(.body.bold())
                     .foregroundColor(.blue)
@@ -185,12 +177,9 @@ struct SingleNoteView: View {
             loadNote()
             recordingService.currentMeeting = meeting
             
-            // Auto-focus keyboard for new meetings
-            if meeting.rawNotes?.isEmpty ?? true && 
-               meeting.transcript?.isEmpty ?? true {
-                isEditingMode = true
-                isEditing = true
-            }
+            // Don't auto-focus keyboard
+            isEditingMode = false
+            isEditing = false
         }
         .onDisappear {
             if recordingService.isRecording {

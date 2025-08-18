@@ -76,11 +76,6 @@ struct NoteListView: View {
                 }
             }
             .navigationTitle("Meetings")
-            .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    EditButton()
-                }
-            }
         }
     }
     
