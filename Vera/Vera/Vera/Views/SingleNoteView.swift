@@ -74,37 +74,40 @@ struct SingleNoteView: View {
                 .background(Color.red.opacity(0.1))
                 .cornerRadius(8)
             }
-            
-            // Bottom toolbar
-            HStack(spacing: 20) {
-                // Recording button
-                Button(action: toggleRecording) {
-                    Image(systemName: recordingService.isRecording ? "stop.circle.fill" : "mic.circle.fill")
-                        .font(.title)
-                        .foregroundColor(recordingService.isRecording ? .red : .blue)
-                }
-                
+        }
+        .overlay(
+            // Floating Record Button
+            VStack {
                 Spacer()
                 
-                // Done button only shows when editing
-                if isEditingMode {
-                    Button("Done") {
-                        isEditing = false
-                        isEditingMode = false
-                    }
-                    .font(.body.bold())
-                    .foregroundColor(.blue)
-                }
+                FloatingActionButton(
+                    title: recordingService.isRecording ? "Stop Recording" : "Start Recording",
+                    icon: recordingService.isRecording ? "stop.circle.fill" : "mic.circle.fill",
+                    action: toggleRecording,
+                    isActive: recordingService.isRecording,
+                    showTitle: true
+                )
+                .padding(.bottom, 30)
             }
-            .padding()
-            .background(Color(UIColor.systemBackground))
-            .overlay(
-                Rectangle()
-                    .frame(height: 0.5)
-                    .foregroundColor(Color(UIColor.separator)),
-                alignment: .top
-            )
-        }
+        )
+        .overlay(
+            // Done button overlay when editing
+            VStack {
+                HStack {
+                    Spacer()
+                    if isEditingMode {
+                        Button("Done") {
+                            isEditing = false
+                            isEditingMode = false
+                        }
+                        .font(.body.bold())
+                        .foregroundColor(.blue)
+                        .padding()
+                    }
+                }
+                Spacer()
+            }
+        )
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .principal) {

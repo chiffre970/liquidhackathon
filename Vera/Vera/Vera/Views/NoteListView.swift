@@ -36,6 +36,10 @@ struct NoteListView: View {
                             NoteRowView(meeting: meeting)
                         }
                         .id(meeting.objectID)
+                        .listRowSeparatorTint(.gray.opacity(0.3))
+                        .listRowSeparator(.visible, edges: .bottom)
+                        .alignmentGuide(.listRowSeparatorLeading) { _ in 0 }
+                        .alignmentGuide(.listRowSeparatorTrailing) { d in d.width - 16 }
                     }
                     .onDelete(perform: deleteMeetings)
                 }
@@ -50,28 +54,11 @@ struct NoteListView: View {
                 // New Note Button (floating)
                 VStack {
                     Spacer()
-                    Button(action: createNewNote) {
-                        HStack(spacing: 12) {
-                            Image(systemName: "plus.circle.fill")
-                                .font(.title2)
-                            Text("New Meeting")
-                                .font(.headline)
-                                .fontWeight(.semibold)
-                        }
-                        .foregroundColor(.white)
-                        .padding(.horizontal, 24)
-                        .padding(.vertical, 16)
-                        .background(
-                            LinearGradient(
-                                gradient: Gradient(colors: [Color.blue, Color.blue.opacity(0.8)]),
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing
-                            )
-                        )
-                        .clipShape(Capsule())
-                        .shadow(color: .black.opacity(0.2), radius: 10, x: 0, y: 5)
-                        .shadow(color: .blue.opacity(0.3), radius: 20, x: 0, y: 10)
-                    }
+                    FloatingActionButton(
+                        title: "New Meeting",
+                        icon: "plus.circle.fill",
+                        action: createNewNote
+                    )
                     .padding(.bottom, 30)
                 }
             }
