@@ -7,7 +7,6 @@ import CoreData
 class MeetingEnhancementService {
     static let shared = MeetingEnhancementService()
     private let lfm2Manager = LFM2Manager.shared
-    private let promptService = AdaptivePromptService.shared
     private let enhancementQueue = DispatchQueue(label: "com.vera.enhancement", qos: .background)
     
     private init() {}
@@ -34,51 +33,103 @@ class MeetingEnhancementService {
                 try await lfm2Manager.loadModel()
             }
             
-            // Step 1: Analyze what elements would be helpful to extract
-            let analysisPrompt = promptService.generateAnalysisPrompt(
-                transcript: transcript,
-                userNotes: meeting.rawNotes
-            )
+            // First: Generate title and preview
+            let titlePrompt = """
+            Based on this conversation, create:
+            1. A concise, descriptive title (3-6 words)
+            2. A one-sentence preview that captures the main topic or purpose
             
-            let config = LFM2Manager.ModelConfiguration(
-                maxTokens: 200,  // Short response for element list
-                temperature: 0.3,  // Lower temperature for more consistent analysis
+            Format exactly as:
+            Title: [your title here]
+            Preview: [your preview here]
+            
+            Content:
+            \(transcript)
+            
+            \(meeting.rawNotes != nil && !meeting.rawNotes!.isEmpty ? "Additional context: \(meeting.rawNotes!)\n" : "")
+            """
+            
+            let titleConfig = LFM2Manager.ModelConfiguration(
+                maxTokens: 150,  // Short for title/preview
+                temperature: 0.4,  // Slightly creative
                 topP: 0.9,
                 streamingEnabled: false
             )
             
-            print("📊 Step 1: Analyzing content to determine relevant elements...")
-            let elementsResponse = try await lfm2Manager.generate(
-                prompt: analysisPrompt,
-                configuration: config
+            print("🏷️ Generating title and preview...")
+            let titleResponse = try await lfm2Manager.generate(
+                prompt: titlePrompt,
+                configuration: titleConfig
             )
             
-            // Parse which elements to extract
-            let elementsToExtract = promptService.parseElementsToExtract(from: elementsResponse)
-            print("   Elements to extract: \(elementsToExtract.map { $0.rawValue }.joined(separator: ", "))")
+            // Parse title and preview
+            var generatedTitle = meeting.title  // Keep existing title as fallback
+            var generatedPreview = ""
             
-            // Step 2: Extract only the identified elements
-            let extractionPrompt = promptService.generateExtractionPrompt(
-                transcript: transcript,
-                userNotes: meeting.rawNotes,
-                elementsToExtract: elementsToExtract
-            )
+            let lines = titleResponse.split(separator: "\n")
+            for line in lines {
+                let lineStr = String(line).trimmingCharacters(in: .whitespaces)
+                if lineStr.hasPrefix("Title:") {
+                    generatedTitle = String(lineStr.dropFirst(6)).trimmingCharacters(in: .whitespaces)
+                } else if lineStr.hasPrefix("Preview:") {
+                    generatedPreview = String(lineStr.dropFirst(8)).trimmingCharacters(in: .whitespaces)
+                }
+            }
             
-            let extractionConfig = LFM2Manager.ModelConfiguration(
-                maxTokens: 1000,
-                temperature: 0.5,  // Balanced temperature for extraction
+            print("📌 Generated Title: \(generatedTitle)")
+            print("👁️ Generated Preview: \(generatedPreview)")
+            
+            // Second: Generate full summary
+            let summaryPrompt = """
+            Summarize this content directly. Extract and organize the key information.
+            
+            Write in this style:
+            - State facts directly without commentary
+            - Use bullet points for key points
+            - Keep all specific details (numbers, dates, names, amounts)
+            - Be concise
+            - Use **bold** or headers if it helps clarity, but keep it simple
+            
+            Never write phrases like "This transcript" or "The speaker" or "The document".
+            Just write the actual content in organized form.
+            
+            Content:
+            \(transcript)
+            
+            \(meeting.rawNotes != nil && !meeting.rawNotes!.isEmpty ? "Additional context: \(meeting.rawNotes!)\n" : "")
+            """
+            
+            let summaryConfig = LFM2Manager.ModelConfiguration(
+                maxTokens: 1000,  // Good balance for detail
+                temperature: 0.3,  // Low for accuracy
                 topP: 0.9,
                 streamingEnabled: false
             )
             
-            print("📝 Step 2: Extracting relevant content...")
+            print("📝 Generating full summary...")
             let analysisText = try await lfm2Manager.generate(
-                prompt: extractionPrompt,
-                configuration: extractionConfig
+                prompt: summaryPrompt,
+                configuration: summaryConfig
             )
             
-            // Save the analysis as enhanced notes
+            // Print the full analysis for debugging
+            print("\n" + String(repeating: "=", count: 50))
+            print("📋 MEETING ANALYSIS COMPLETE:")
+            print(String(repeating: "-", count: 50))
+            print(analysisText)
+            print(String(repeating: "=", count: 50) + "\n")
+            
+            // Save all generated content
             await MainActor.run {
+                // Update title if generated
+                if !generatedTitle.isEmpty && generatedTitle != "Meeting" {
+                    meeting.title = generatedTitle
+                }
+                
+                // Save preview/subtitle
+                meeting.subtitle = generatedPreview
+                
+                // Save full summary
                 meeting.enhancedNotes = analysisText
                 
                 // Create basic insights from the text (we can parse it later if needed)

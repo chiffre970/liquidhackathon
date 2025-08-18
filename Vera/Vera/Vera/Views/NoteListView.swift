@@ -108,15 +108,16 @@ struct NoteRowView: View {
     
     private var preview: String {
         if meeting.isDeleted || meeting.isFault {
-            return "No content"
+            return ""
         }
-        if let notes = meeting.rawNotes, !notes.isEmpty {
-            return notes
-        } else if let transcript = meeting.transcript, !transcript.isEmpty {
-            return transcript
-        } else {
-            return "No content"
+        
+        // Show subtitle/preview if available
+        if let subtitle = meeting.subtitle, !subtitle.isEmpty {
+            return subtitle
         }
+        
+        // Show nothing while waiting for AI to generate preview
+        return ""
     }
     
     private var dateString: String {
@@ -138,11 +139,13 @@ struct NoteRowView: View {
                     .font(.headline)
                     .lineLimit(1)
                 
-                Text(preview)
-                    .font(.subheadline)
-                    .foregroundColor(.secondary)
-                    .lineLimit(2)
-                    .multilineTextAlignment(.leading)
+                if !preview.isEmpty {
+                    Text(preview)
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
+                        .lineLimit(2)
+                        .multilineTextAlignment(.leading)
+                }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             

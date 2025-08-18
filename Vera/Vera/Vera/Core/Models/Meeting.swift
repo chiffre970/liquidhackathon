@@ -20,6 +20,7 @@ extension Meeting {
     
     @NSManaged public var id: UUID
     @NSManaged public var title: String
+    @NSManaged public var subtitle: String?
     @NSManaged public var date: Date
     @NSManaged public var duration: TimeInterval
     @NSManaged public var rawNotes: String?

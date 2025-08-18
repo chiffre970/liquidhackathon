@@ -26,6 +26,7 @@
         <attribute name="processingStatus" optional="YES" attributeType="String"/>
         <attribute name="rawNotes" optional="YES" attributeType="String"/>
         <attribute name="templateUsed" optional="YES" attributeType="String"/>
+        <attribute name="subtitle" optional="YES" attributeType="String"/>
         <attribute name="title" attributeType="String"/>
         <attribute name="transcript" optional="YES" attributeType="String"/>
     </entity>

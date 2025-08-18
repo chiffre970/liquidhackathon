@@ -10,6 +10,7 @@ struct SingleNoteView: View {
     @State private var isEnhancing = false
     @State private var showingShareSheet = false
     @State private var showingTranscript = false
+    @State private var isEditingMode = false
     @FocusState private var isEditing: Bool
     @FocusState private var isTitleEditing: Bool
     
@@ -26,14 +27,37 @@ struct SingleNoteView: View {
     
     var body: some View {
         VStack(spacing: 0) {
-            // Note content editor
-            TextEditor(text: $noteContent)
-                .padding(.horizontal, 16)
-                .padding(.top, 8)
-                .focused($isEditing)
-                .onChange(of: noteContent) { newValue in
-                    saveNote()
+            // Note content - show markdown rendered or editor
+            if isEditingMode {
+                TextEditor(text: $noteContent)
+                    .padding(.horizontal, 16)
+                    .padding(.top, 8)
+                    .focused($isEditing)
+                    .onChange(of: noteContent) { newValue in
+                        saveNote()
+                    }
+            } else {
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 12) {
+                        if let attributedString = try? AttributedString(markdown: noteContent, 
+                                                                        options: AttributedString.MarkdownParsingOptions(interpretedSyntax: .inlineOnlyPreservingWhitespace)) {
+                            Text(attributedString)
+                                .padding(.horizontal, 16)
+                                .padding(.top, 8)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                        } else {
+                            Text(noteContent)
+                                .padding(.horizontal, 16)
+                                .padding(.top, 8)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                        }
+                    }
                 }
+                .onTapGesture {
+                    isEditingMode = true
+                    isEditing = true
+                }
+            }
             
             // Recording indicator
             if recordingService.isRecording {
@@ -63,10 +87,18 @@ struct SingleNoteView: View {
                 
                 Spacer()
                 
-                // Done button to dismiss keyboard
-                if isEditing {
+                // Done/Edit button
+                if isEditingMode {
                     Button("Done") {
                         isEditing = false
+                        isEditingMode = false
+                    }
+                    .font(.body.bold())
+                    .foregroundColor(.blue)
+                } else {
+                    Button("Edit") {
+                        isEditingMode = true
+                        isEditing = true
                     }
                     .font(.body.bold())
                     .foregroundColor(.blue)
@@ -156,6 +188,7 @@ struct SingleNoteView: View {
             // Auto-focus keyboard for new meetings
             if meeting.rawNotes?.isEmpty ?? true && 
                meeting.transcript?.isEmpty ?? true {
+                isEditingMode = true
                 isEditing = true
             }
         }
@@ -188,15 +221,16 @@ struct SingleNoteView: View {
         
         var content = ""
         
-        // Load user notes
+        // Load user notes if available
         if let notes = meeting.rawNotes, !notes.isEmpty {
             content = notes
         }
         
-        // Add enhanced notes if available (but not transcript)
+        // Show enhanced notes if available (replaces content if no user notes)
         if let enhanced = meeting.enhancedNotes, !enhanced.isEmpty {
+            // If there are user notes, append the AI summary
             if !content.isEmpty {
-                content += "\n\n--- AI Analysis ---\n"
+                content += "\n\n"
             }
             content += enhanced
         }
