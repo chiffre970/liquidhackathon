@@ -31,20 +31,34 @@ struct SingleNoteView: View {
             Color.primaryBackground
                 .ignoresSafeArea()
                 .overlay(
-                    // Inner shadow effect
+                    // Inner shadow from all edges
                     Rectangle()
                         .fill(
-                            LinearGradient(
+                            RadialGradient(
                                 gradient: Gradient(stops: [
-                                    .init(color: Color.white.opacity(0.05), location: 0),
-                                    .init(color: Color.clear, location: 0.1)
+                                    .init(color: Color.clear, location: 0.0),
+                                    .init(color: Color.clear, location: 0.7),
+                                    .init(color: Color(hex: "#4A90E2").opacity(0.01), location: 0.85),
+                                    .init(color: Color(hex: "#4A90E2").opacity(0.03), location: 1.0)
                                 ]),
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing
+                                center: .center,
+                                startRadius: 150,
+                                endRadius: 400
                             )
                         )
-                        .blur(radius: 20)
                         .ignoresSafeArea()
+                        .allowsHitTesting(false)
+                )
+                .overlay(
+                    // Additional edge highlight - uniform on all sides
+                    RoundedRectangle(cornerRadius: 0)
+                        .strokeBorder(
+                            Color(hex: "#4A90E2").opacity(0.025),
+                            lineWidth: 20
+                        )
+                        .blur(radius: 15)
+                        .ignoresSafeArea()
+                        .allowsHitTesting(false)
                 )
             
             VStack(spacing: 0) {

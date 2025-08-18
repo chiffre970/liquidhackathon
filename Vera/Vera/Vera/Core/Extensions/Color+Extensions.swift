@@ -29,5 +29,5 @@ extension Color {
     static let primaryText = Color(hex: "#D3E3F0")
     static let secondaryText = Color(hex: "#A5B2BE")
     static let eggYolk = Color(hex: "#FFD700")
-    static let primaryBackground = Color(hex: "#0A0F1A")
+    static let primaryBackground = Color(hex: "#151A26")
 }

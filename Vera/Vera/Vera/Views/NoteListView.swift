@@ -11,6 +11,9 @@ struct NoteListView: View {
     @State private var searchText = ""
     @State private var selectedMeeting: Meeting?
     @State private var showingNote = false
+    @State private var showSearchBar = false
+    @State private var lastScrollOffset: CGFloat = 0
+    @State private var pullProgress: CGFloat = 0
     
     var filteredMeetings: [Meeting] {
         if searchText.isEmpty {
@@ -40,73 +43,89 @@ struct NoteListView: View {
                                 RadialGradient(
                                     gradient: Gradient(stops: [
                                         .init(color: Color.clear, location: 0.0),
-                                        .init(color: Color.clear, location: 0.4),
-                                        .init(color: Color.white.opacity(0.02), location: 0.7),
-                                        .init(color: Color.white.opacity(0.05), location: 1.0)
+                                        .init(color: Color.clear, location: 0.7),
+                                        .init(color: Color(hex: "#4A90E2").opacity(0.01), location: 0.85),
+                                        .init(color: Color(hex: "#4A90E2").opacity(0.03), location: 1.0)
                                     ]),
                                     center: .center,
-                                    startRadius: 50,
-                                    endRadius: 350
+                                    startRadius: 150,
+                                    endRadius: 400
                                 )
                             )
                             .ignoresSafeArea()
                             .allowsHitTesting(false)
                     )
                     .overlay(
-                        // Additional edge highlight
-                        Rectangle()
-                            .stroke(
-                                LinearGradient(
-                                    gradient: Gradient(colors: [
-                                        Color.white.opacity(0.06),
-                                        Color.white.opacity(0.03),
-                                        Color.clear
-                                    ]),
-                                    startPoint: .topLeading,
-                                    endPoint: .center
-                                ),
-                                lineWidth: 1
+                        // Additional edge highlight - uniform on all sides
+                        RoundedRectangle(cornerRadius: 0)
+                            .strokeBorder(
+                                Color(hex: "#4A90E2").opacity(0.025),
+                                lineWidth: 20
                             )
-                            .blur(radius: 10)
+                            .blur(radius: 15)
                             .ignoresSafeArea()
                             .allowsHitTesting(false)
                     )
                 
                 VStack(spacing: 0) {
-                    // Custom Search Bar
-                    HStack {
-                        Image(systemName: "magnifyingglass")
-                            .foregroundColor(Color.gray.opacity(0.5))
-                        
-                        TextField("Search meetings", text: $searchText)
-                            .textFieldStyle(PlainTextFieldStyle())
-                            .foregroundColor(Color(hex: "#D3E3F0"))
-                        
-                        if !searchText.isEmpty {
-                            Button(action: { searchText = "" }) {
-                                Image(systemName: "xmark.circle.fill")
-                                    .foregroundColor(Color.gray.opacity(0.5))
+                    // Custom Search Bar - only shown when pulled down
+                    if showSearchBar {
+                        HStack {
+                            Image(systemName: "magnifyingglass")
+                                .foregroundColor(.secondaryText)
+                                .font(.system(size: 18, weight: .medium))
+                            
+                            TextField("", text: $searchText, prompt: Text("Search meetings").foregroundColor(.secondaryText))
+                                .textFieldStyle(PlainTextFieldStyle())
+                                .foregroundColor(.primaryText)
+                                .accentColor(.secondaryText)
+                                .font(.system(size: 16, weight: .regular))
+                            
+                            if !searchText.isEmpty {
+                                Button(action: { searchText = "" }) {
+                                    Image(systemName: "xmark.circle.fill")
+                                        .foregroundColor(.secondaryText)
+                                }
                             }
                         }
+                        .frame(height: 46) // Reduced height
+                        .padding(.horizontal, 20) // Slightly less padding
+                        .background(Color.clear)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 28)
+                                .stroke(Color.secondaryText.opacity(0.2), lineWidth: 1)
+                        )
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 8)
+                        .transition(.asymmetric(
+                            insertion: .move(edge: .top).combined(with: .opacity),
+                            removal: .move(edge: .top).combined(with: .opacity)
+                        ))
                     }
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 8)
-                    .background(Color.primaryBackground.opacity(0.8))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 10)
-                            .stroke(Color.white.opacity(0.05), lineWidth: 1)
-                    )
-                    .cornerRadius(10)
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 8)
                     
-                    // List content (no divider under search)
+                    // Pull indicator when pulling but search not yet shown
+                    if !showSearchBar && pullProgress > 0 {
+                        HStack {
+                            Image(systemName: "magnifyingglass")
+                                .foregroundColor(.secondaryText.opacity(Double(pullProgress)))
+                                .font(.system(size: 14))
+                            Text("Pull to search")
+                                .foregroundColor(.secondaryText.opacity(Double(pullProgress)))
+                                .font(.caption)
+                        }
+                        .frame(height: 30)
+                        .scaleEffect(pullProgress)
+                        .opacity(Double(pullProgress))
+                    }
+                    
+                    // List content with gesture detection
                     List {
                         ForEach(filteredMeetings) { meeting in
                             NavigationLink(destination: SingleNoteView(meeting: meeting)) {
                                 NoteRowView(meeting: meeting)
                             }
                             .id(meeting.objectID)
+                            .accentColor(.secondaryText)
                             .listRowInsets(EdgeInsets(top: 0, leading: 16, bottom: 0, trailing: 16))
                             .listRowSeparator(.hidden)
                             .listRowBackground(Color.clear)
@@ -124,6 +143,41 @@ struct NoteListView: View {
                     .listStyle(PlainListStyle())
                     .scrollContentBackground(.hidden)
                     .background(Color.clear)
+                    .background(
+                        GeometryReader { geometry in
+                            Color.clear.preference(
+                                key: ScrollOffsetPreferenceKey.self,
+                                value: geometry.frame(in: .named("scroll")).origin.y
+                            )
+                        }
+                    )
+                    .onPreferenceChange(ScrollOffsetPreferenceKey.self) { value in
+                        let delta = value - lastScrollOffset
+                        lastScrollOffset = value
+                        
+                        // If we're at the top and pulling down
+                        if value > 0 {
+                            pullProgress = min(value / 60, 1.0) // 60 points to fully reveal
+                            
+                            // Show search bar when pulled enough
+                            if value > 50 && !showSearchBar {
+                                withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
+                                    showSearchBar = true
+                                    pullProgress = 0
+                                }
+                            }
+                        } else {
+                            pullProgress = 0
+                            
+                            // Hide search bar when scrolling down significantly
+                            if delta < -10 && showSearchBar && searchText.isEmpty {
+                                withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
+                                    showSearchBar = false
+                                }
+                            }
+                        }
+                    }
+                    .coordinateSpace(name: "scroll")
                 }
                 .navigationDestination(isPresented: $showingNote) {
                     if let meeting = selectedMeeting {
@@ -143,6 +197,7 @@ struct NoteListView: View {
                 }
             }
             .navigationTitle("Meetings")
+            .navigationBarTitleDisplayMode(.inline)
             .onAppear {
                 UINavigationBar.appearance().largeTitleTextAttributes = [.foregroundColor: UIColor(Color.primaryText)]
                 UINavigationBar.appearance().titleTextAttributes = [.foregroundColor: UIColor(Color.primaryText)]
@@ -176,6 +231,14 @@ struct NoteListView: View {
                 print("Failed to delete meetings: \(error)")
             }
         }
+    }
+}
+
+// Preference key for tracking scroll offset
+struct ScrollOffsetPreferenceKey: PreferenceKey {
+    static var defaultValue: CGFloat = 0
+    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
+        value = nextValue()
     }
 }
 

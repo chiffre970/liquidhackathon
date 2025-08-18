@@ -24,20 +24,21 @@ struct FloatingActionButton: View {
                     .padding(.horizontal, 4)
                     .padding(.bottom, 5)
                 
-                // Layer 3: Lower Highlight - extends outside and clips naturally
-                // Uses negative padding to extend beyond button bounds
-                RoundedRectangle(cornerRadius: 30)
+                // Layer 3: Lower Highlight - positioned at bottom edge
+                // Cuts off around the middle of the side curves
+                RoundedRectangle(cornerRadius: 26)
                     .stroke(Color(hex: "#D0E8FF").opacity(0.2), lineWidth: 1.5)
                     .blur(radius: 0.45)
-                    .padding(.top, -3)
-                    .padding(.horizontal, -2)
-                    .padding(.bottom, -1)
+                    .padding(.top, -5)      // Extends above to cut off at side curve midpoint
+                    .padding(.horizontal, 0)  // Extends beyond sides
+                    .padding(.bottom, 1.5)  // Flush with bottom edge
+                    .mask(RoundedRectangle(cornerRadius: 28)) // Mask to button shape to clip overflow
                 
                 // Layer 4: Inner Fill - much darker blue
                 // Very dark navy blue, almost black
                 ZStack {
                     RoundedRectangle(cornerRadius: 24)
-                        .fill(Color(hex: "#0A1628")) // Much darker blue, almost black
+                        .fill(Color(hex: "#101928")) // Inner fill color
                         .padding(4)
                     
                     // Inset shadow effect
@@ -95,13 +96,23 @@ struct UnifiedButtonStyle: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
             .background(
-                // Layer 1: Base layer with border and background
-                // Dark background with subtle border
+                // Layer 1: Base layer with gradient border and background
+                // Dark background with gradient border
                 RoundedRectangle(cornerRadius: 28)
-                    .fill(Color(hex: "#1A1A2E")) // Slightly bluish dark background
+                    .fill(Color(hex: "#1A2332")) // Much darker main fill
                     .overlay(
                         RoundedRectangle(cornerRadius: 28)
-                            .stroke(Color(hex: "#2A2A3E"), lineWidth: 1)
+                            .stroke(
+                                LinearGradient(
+                                    gradient: Gradient(colors: [
+                                        Color(hex: "#232B31"), // Top color (50% darker)
+                                        Color(hex: "#3D454E")  // Bottom color (50% darker)
+                                    ]),
+                                    startPoint: .top,
+                                    endPoint: .bottom
+                                ),
+                                lineWidth: 1
+                            )
                     )
             )
             // No shadow/glow - removed per request
