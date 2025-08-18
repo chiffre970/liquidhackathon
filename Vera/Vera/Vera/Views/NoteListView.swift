@@ -34,20 +34,42 @@ struct NoteListView: View {
                 Color.primaryBackground
                     .ignoresSafeArea()
                     .overlay(
-                        // Inner shadow effect
+                        // Inner shadow from all edges
                         Rectangle()
                             .fill(
-                                LinearGradient(
+                                RadialGradient(
                                     gradient: Gradient(stops: [
-                                        .init(color: Color.white.opacity(0.05), location: 0),
-                                        .init(color: Color.clear, location: 0.1)
+                                        .init(color: Color.clear, location: 0.0),
+                                        .init(color: Color.clear, location: 0.4),
+                                        .init(color: Color.white.opacity(0.02), location: 0.7),
+                                        .init(color: Color.white.opacity(0.05), location: 1.0)
                                     ]),
-                                    startPoint: .topLeading,
-                                    endPoint: .bottomTrailing
+                                    center: .center,
+                                    startRadius: 50,
+                                    endRadius: 350
                                 )
                             )
-                            .blur(radius: 20)
                             .ignoresSafeArea()
+                            .allowsHitTesting(false)
+                    )
+                    .overlay(
+                        // Additional edge highlight
+                        Rectangle()
+                            .stroke(
+                                LinearGradient(
+                                    gradient: Gradient(colors: [
+                                        Color.white.opacity(0.06),
+                                        Color.white.opacity(0.03),
+                                        Color.clear
+                                    ]),
+                                    startPoint: .topLeading,
+                                    endPoint: .center
+                                ),
+                                lineWidth: 1
+                            )
+                            .blur(radius: 10)
+                            .ignoresSafeArea()
+                            .allowsHitTesting(false)
                     )
                 
                 VStack(spacing: 0) {
@@ -87,6 +109,7 @@ struct NoteListView: View {
                             .id(meeting.objectID)
                             .listRowInsets(EdgeInsets(top: 0, leading: 16, bottom: 0, trailing: 16))
                             .listRowSeparator(.hidden)
+                            .listRowBackground(Color.clear)
                             .overlay(
                                 // Custom separator matching search bar width
                                 Rectangle()
