@@ -70,26 +70,37 @@ struct SingleNoteView: View {
                     .foregroundColor(.primaryText)
                     .scrollContentBackground(.hidden)
                     .padding(.horizontal, 16)
-                    .padding(.top, 8)
+                    .padding(.vertical, 8)
                     .focused($isEditing)
                     .onChange(of: noteContent) { newValue in
                         saveNote()
                     }
+                    .toolbar {
+                        ToolbarItemGroup(placement: .keyboard) {
+                            Spacer()
+                            Button("Done") {
+                                isEditing = false
+                                isEditingMode = false
+                            }
+                            .font(.body.bold())
+                            .foregroundColor(.blue)
+                        }
+                    }
             } else {
                 ScrollView {
-                    VStack(alignment: .leading, spacing: 12) {
+                    VStack(alignment: .leading, spacing: 0) {
                         if let attributedString = try? AttributedString(markdown: noteContent, 
                                                                         options: AttributedString.MarkdownParsingOptions(interpretedSyntax: .inlineOnlyPreservingWhitespace)) {
                             Text(attributedString)
                                 .foregroundColor(.primaryText)
                                 .padding(.horizontal, 16)
-                                .padding(.top, 8)
+                                .padding(.vertical, 8)
                                 .frame(maxWidth: .infinity, alignment: .leading)
                         } else {
                             Text(noteContent)
                                 .foregroundColor(.primaryText)
                                 .padding(.horizontal, 16)
-                                .padding(.top, 8)
+                                .padding(.vertical, 8)
                                 .frame(maxWidth: .infinity, alignment: .leading)
                         }
                     }
@@ -102,7 +113,7 @@ struct SingleNoteView: View {
                 }
             }
             }
-            .overlay(
+            .overlay( 
             // Floating Record Button
             VStack {
                 Spacer()
@@ -118,32 +129,17 @@ struct SingleNoteView: View {
                 .padding(.bottom, 30)
             }
         )
-        .overlay(
-            // Done button overlay when editing
-            VStack {
-                HStack {
-                    Spacer()
-                    if isEditingMode {
-                        Button("Done") {
-                            isEditing = false
-                            isEditingMode = false
-                        }
-                        .font(.body.bold())
-                        .foregroundColor(.blue)
-                        .padding()
-                    }
-                }
-                Spacer()
-            }
-        )
         
         // Custom dropdown menu overlay
         if showingMenu {
-            Color.black.opacity(0.3)
-                .ignoresSafeArea()
+            Color.clear
+                .contentShape(Rectangle())
                 .onTapGesture {
-                    showingMenu = false
+                    withAnimation(.easeInOut(duration: 0.3)) {
+                        showingMenu = false
+                    }
                 }
+                .ignoresSafeArea()
             
             VStack {
                 HStack {
@@ -204,6 +200,7 @@ struct SingleNoteView: View {
         }
         }
         .navigationBarTitleDisplayMode(.inline)
+        .toolbarBackground(.hidden, for: .navigationBar)
         .toolbar {
             ToolbarItem(placement: .principal) {
                 TextField("Meeting Title", text: $noteTitle)
@@ -247,7 +244,9 @@ struct SingleNoteView: View {
             
             ToolbarItem(placement: .navigationBarTrailing) {
                 Button(action: { 
-                    showingMenu.toggle()
+                    withAnimation(.easeInOut(duration: 0.3)) {
+                        showingMenu.toggle()
+                    }
                 }) {
                     Image(systemName: "ellipsis.circle")
                         .foregroundColor(.secondaryText)
@@ -262,9 +261,6 @@ struct SingleNoteView: View {
             // Don't auto-focus keyboard
             isEditingMode = false
             isEditing = false
-            
-            // Set navigation bar tint color for back button
-            UINavigationBar.appearance().tintColor = UIColor(Color.secondaryText)
         }
         .onDisappear {
             if recordingService.isRecording {

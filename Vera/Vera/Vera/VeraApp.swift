@@ -17,6 +17,23 @@ struct VeraApp: App {
     init() {
         print("🚀 Initializing Vera Meeting Notes...")
         
+        // Set navigation bar appearance globally
+        let appearance = UINavigationBarAppearance()
+        appearance.configureWithTransparentBackground()
+        appearance.backgroundColor = .clear
+        appearance.backgroundEffect = nil
+        appearance.shadowColor = nil
+        
+        // Set title to light grey color
+        let titleColor = UIColor(red: 211/255, green: 227/255, blue: 240/255, alpha: 1.0) // #D3E3F0
+        appearance.largeTitleTextAttributes = [.foregroundColor: titleColor]
+        appearance.titleTextAttributes = [.foregroundColor: titleColor]
+        
+        UINavigationBar.appearance().standardAppearance = appearance
+        UINavigationBar.appearance().scrollEdgeAppearance = appearance
+        UINavigationBar.appearance().compactAppearance = appearance
+        UINavigationBar.appearance().tintColor = UIColor(red: 165/255, green: 178/255, blue: 190/255, alpha: 1.0) // #A5B2BE
+        
         // Clean up orphaned audio files on launch
         let context = persistenceController.container.viewContext
         Task {

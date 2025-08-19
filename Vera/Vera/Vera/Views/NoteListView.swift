@@ -101,7 +101,6 @@ struct NoteListView: View {
                                 NoteRowView(meeting: meeting)
                             }
                             .id(meeting.objectID)
-                            .accentColor(.secondaryText)
                             .listRowInsets(EdgeInsets(top: 0, leading: 16, bottom: 0, trailing: 16))
                             .listRowSeparator(.hidden)
                             .listRowBackground(Color.clear)
@@ -138,10 +137,7 @@ struct NoteListView: View {
                 }
             }
             .navigationTitle("Meetings")
-            .onAppear {
-                UINavigationBar.appearance().largeTitleTextAttributes = [.foregroundColor: UIColor(Color.primaryText)]
-                UINavigationBar.appearance().titleTextAttributes = [.foregroundColor: UIColor(Color.primaryText)]
-            }
+            .navigationBarTitleDisplayMode(.large)
         }
         .tint(.secondaryText)
     }
@@ -227,7 +223,7 @@ struct NoteRowView: View {
                 .foregroundColor(.secondaryText)
         }
         .padding(.horizontal, 8)  // Add internal padding to move content inward
-        .frame(height: 80)
+        .frame(height: 85)
         .frame(maxWidth: .infinity)
         }
     }

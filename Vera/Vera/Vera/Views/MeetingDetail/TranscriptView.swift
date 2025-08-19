@@ -3,7 +3,6 @@ import SwiftUI
 struct TranscriptView: View {
     @ObservedObject var meeting: Meeting
     @State private var searchText = ""
-    @State private var fontSize: CGFloat = 16
     
     var body: some View {
         ZStack {
@@ -37,8 +36,6 @@ struct TranscriptView: View {
             } else {
                 emptyState
             }
-            
-            fontSizeControl
             }
         }
         .navigationTitle("Transcript")
@@ -117,7 +114,7 @@ struct TranscriptView: View {
     private var highlightedTranscript: some View {
         if let transcript = meeting.transcript {
             buildHighlightedText(from: transcript)
-                .font(.system(size: fontSize))
+                .font(.system(size: 16))
                 .padding()
                 .frame(maxWidth: .infinity, alignment: .leading)
         } else {
@@ -142,23 +139,5 @@ struct TranscriptView: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .padding()
-    }
-    
-    private var fontSizeControl: some View {
-        HStack {
-            Text("Text Size")
-                .font(.caption)
-                .foregroundColor(.secondaryText)
-            
-            Slider(value: $fontSize, in: 12...24, step: 1)
-                .frame(width: 150)
-            
-            Text("\(Int(fontSize))pt")
-                .font(.caption)
-                .foregroundColor(.secondaryText)
-                .frame(width: 35)
-        }
-        .padding()
-        .background(Color.gray.opacity(0.05))
     }
 }
