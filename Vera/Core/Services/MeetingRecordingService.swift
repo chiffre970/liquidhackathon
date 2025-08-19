@@ -163,6 +163,14 @@ class MeetingRecordingService: ObservableObject {
     private func stopRecording() {
         print("🛑 [MeetingRecordingService] stopRecording called")
         
+        // FIRST: Invalidate timers to prevent any more chunks from being saved
+        print("⏰ [MeetingRecordingService] Invalidating timers...")
+        timer?.invalidate()
+        timer = nil
+        chunkTimer?.invalidate()
+        chunkTimer = nil
+        
+        // THEN: Set recording flag to false
         isRecording = false
         
         // Stop live transcription
@@ -179,10 +187,6 @@ class MeetingRecordingService: ObservableObject {
             try? FileManager.default.removeItem(at: currentChunkURL)
             print("🧹 [MeetingRecordingService] Cleaned up audio file")
         }
-        
-        print("⏰ [MeetingRecordingService] Invalidating timers...")
-        timer?.invalidate()
-        chunkTimer?.invalidate()
         
         // Save final segment if we have one
         if !fullTranscript.isEmpty {
