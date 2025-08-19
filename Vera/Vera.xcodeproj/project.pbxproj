@@ -9,6 +9,25 @@
 /* Begin PBXBuildFile section */
 		8C2AADD22E4C741D00AE8768 /* LeapModelDownloader in Frameworks */ = {isa = PBXBuildFile; productRef = 8C2AADD12E4C741D00AE8768 /* LeapModelDownloader */; };
 		8C2AADD42E4C741D00AE8768 /* LeapSDK in Frameworks */ = {isa = PBXBuildFile; productRef = 8C2AADD32E4C741D00AE8768 /* LeapSDK */; };
+		8C65FED02E542D0000C51B85 /* LFM2-700M-8da4w_output_8da8w-seq_4096.bundle in Resources */ = {isa = PBXBuildFile; fileRef = 8C65FECF2E542D0000C51B85 /* LFM2-700M-8da4w_output_8da8w-seq_4096.bundle */; };
+		8C65FEE42E542DC200C51B85 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 8C65FEE32E542DC200C51B85 /* Assets.xcassets */; };
+		8C65FEE62E542DCD00C51B85 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8C65FEE52E542DCD00C51B85 /* ContentView.swift */; };
+		8C65FEF52E542DD600C51B85 /* TranscriptionService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8C65FEF22E542DD600C51B85 /* TranscriptionService.swift */; };
+		8C65FEF62E542DD600C51B85 /* MeetingRecordingService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8C65FEEF2E542DD600C51B85 /* MeetingRecordingService.swift */; };
+		8C65FEF72E542DD600C51B85 /* View+InnerShadow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8C65FEE82E542DD600C51B85 /* View+InnerShadow.swift */; };
+		8C65FEF82E542DD600C51B85 /* PersistenceController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8C65FEF02E542DD600C51B85 /* PersistenceController.swift */; };
+		8C65FEF92E542DD600C51B85 /* StorageManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8C65FEF12E542DD600C51B85 /* StorageManager.swift */; };
+		8C65FEFA2E542DD600C51B85 /* Color+Extensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8C65FEE72E542DD600C51B85 /* Color+Extensions.swift */; };
+		8C65FEFB2E542DD600C51B85 /* MeetingEnhancementService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8C65FEEE2E542DD600C51B85 /* MeetingEnhancementService.swift */; };
+		8C65FEFC2E542DD600C51B85 /* AudioRecorder.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8C65FEEC2E542DD600C51B85 /* AudioRecorder.swift */; };
+		8C65FEFD2E542DD600C51B85 /* LFM2Manager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8C65FEED2E542DD600C51B85 /* LFM2Manager.swift */; };
+		8C65FEFE2E542DD600C51B85 /* Meeting.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8C65FEEA2E542DD600C51B85 /* Meeting.swift */; };
+		8C65FF012E542DE700C51B85 /* Vera.xcdatamodeld in Sources */ = {isa = PBXBuildFile; fileRef = 8C65FEFF2E542DE700C51B85 /* Vera.xcdatamodeld */; };
+		8C65FF032E542DF100C51B85 /* VeraApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8C65FF022E542DF100C51B85 /* VeraApp.swift */; };
+		8C65FF0A2E542DF700C51B85 /* SingleNoteView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8C65FF072E542DF700C51B85 /* SingleNoteView.swift */; };
+		8C65FF0B2E542DF700C51B85 /* TranscriptView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8C65FF082E542DF700C51B85 /* TranscriptView.swift */; };
+		8C65FF0C2E542DF700C51B85 /* NoteListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8C65FF062E542DF700C51B85 /* NoteListView.swift */; };
+		8C65FF0D2E542DF700C51B85 /* PrimaryButtonStyle.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8C65FF042E542DF700C51B85 /* PrimaryButtonStyle.swift */; };
 		8CC427B42E4845DD003D5E74 /* Accelerate.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8CC427B32E4845DD003D5E74 /* Accelerate.framework */; };
 		8CC427B62E4845E5003D5E74 /* Metal.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8CC427B52E4845E5003D5E74 /* Metal.framework */; };
 		8CC427B82E4845F0003D5E74 /* MetalPerformanceShaders.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8CC427B72E4845F0003D5E74 /* MetalPerformanceShaders.framework */; };
@@ -33,6 +52,25 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		8C65FECF2E542D0000C51B85 /* LFM2-700M-8da4w_output_8da8w-seq_4096.bundle */ = {isa = PBXFileReference; lastKnownFileType = file; path = "LFM2-700M-8da4w_output_8da8w-seq_4096.bundle"; sourceTree = "<group>"; };
+		8C65FEE32E542DC200C51B85 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		8C65FEE52E542DCD00C51B85 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
+		8C65FEE72E542DD600C51B85 /* Color+Extensions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Color+Extensions.swift"; sourceTree = "<group>"; };
+		8C65FEE82E542DD600C51B85 /* View+InnerShadow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "View+InnerShadow.swift"; sourceTree = "<group>"; };
+		8C65FEEA2E542DD600C51B85 /* Meeting.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Meeting.swift; sourceTree = "<group>"; };
+		8C65FEEC2E542DD600C51B85 /* AudioRecorder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioRecorder.swift; sourceTree = "<group>"; };
+		8C65FEED2E542DD600C51B85 /* LFM2Manager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LFM2Manager.swift; sourceTree = "<group>"; };
+		8C65FEEE2E542DD600C51B85 /* MeetingEnhancementService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MeetingEnhancementService.swift; sourceTree = "<group>"; };
+		8C65FEEF2E542DD600C51B85 /* MeetingRecordingService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MeetingRecordingService.swift; sourceTree = "<group>"; };
+		8C65FEF02E542DD600C51B85 /* PersistenceController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PersistenceController.swift; sourceTree = "<group>"; };
+		8C65FEF12E542DD600C51B85 /* StorageManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StorageManager.swift; sourceTree = "<group>"; };
+		8C65FEF22E542DD600C51B85 /* TranscriptionService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TranscriptionService.swift; sourceTree = "<group>"; };
+		8C65FF002E542DE700C51B85 /* Vera.xcdatamodel */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcdatamodel; path = Vera.xcdatamodel; sourceTree = "<group>"; };
+		8C65FF022E542DF100C51B85 /* VeraApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VeraApp.swift; sourceTree = "<group>"; };
+		8C65FF042E542DF700C51B85 /* PrimaryButtonStyle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PrimaryButtonStyle.swift; sourceTree = "<group>"; };
+		8C65FF062E542DF700C51B85 /* NoteListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NoteListView.swift; sourceTree = "<group>"; };
+		8C65FF072E542DF700C51B85 /* SingleNoteView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SingleNoteView.swift; sourceTree = "<group>"; };
+		8C65FF082E542DF700C51B85 /* TranscriptView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TranscriptView.swift; sourceTree = "<group>"; };
 		8CC427B32E4845DD003D5E74 /* Accelerate.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Accelerate.framework; path = System/Library/Frameworks/Accelerate.framework; sourceTree = SDKROOT; };
 		8CC427B52E4845E5003D5E74 /* Metal.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Metal.framework; path = System/Library/Frameworks/Metal.framework; sourceTree = SDKROOT; };
 		8CC427B72E4845F0003D5E74 /* MetalPerformanceShaders.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = MetalPerformanceShaders.framework; path = System/Library/Frameworks/MetalPerformanceShaders.framework; sourceTree = SDKROOT; };
@@ -43,11 +81,6 @@
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
-		8CE8DB192E457610006A9CB2 /* Vera */ = {
-			isa = PBXFileSystemSynchronizedRootGroup;
-			path = Vera;
-			sourceTree = "<group>";
-		};
 		8CE8DB2C2E457611006A9CB2 /* VeraTests */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			path = VeraTests;
@@ -91,6 +124,66 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		8C65FEE92E542DD600C51B85 /* Extensions */ = {
+			isa = PBXGroup;
+			children = (
+				8C65FEE72E542DD600C51B85 /* Color+Extensions.swift */,
+				8C65FEE82E542DD600C51B85 /* View+InnerShadow.swift */,
+			);
+			path = Extensions;
+			sourceTree = "<group>";
+		};
+		8C65FEEB2E542DD600C51B85 /* Models */ = {
+			isa = PBXGroup;
+			children = (
+				8C65FEEA2E542DD600C51B85 /* Meeting.swift */,
+			);
+			path = Models;
+			sourceTree = "<group>";
+		};
+		8C65FEF32E542DD600C51B85 /* Services */ = {
+			isa = PBXGroup;
+			children = (
+				8C65FEEC2E542DD600C51B85 /* AudioRecorder.swift */,
+				8C65FEED2E542DD600C51B85 /* LFM2Manager.swift */,
+				8C65FEEE2E542DD600C51B85 /* MeetingEnhancementService.swift */,
+				8C65FEEF2E542DD600C51B85 /* MeetingRecordingService.swift */,
+				8C65FEF02E542DD600C51B85 /* PersistenceController.swift */,
+				8C65FEF12E542DD600C51B85 /* StorageManager.swift */,
+				8C65FEF22E542DD600C51B85 /* TranscriptionService.swift */,
+			);
+			path = Services;
+			sourceTree = "<group>";
+		};
+		8C65FEF42E542DD600C51B85 /* Core */ = {
+			isa = PBXGroup;
+			children = (
+				8C65FEE92E542DD600C51B85 /* Extensions */,
+				8C65FEEB2E542DD600C51B85 /* Models */,
+				8C65FEF32E542DD600C51B85 /* Services */,
+			);
+			path = Core;
+			sourceTree = "<group>";
+		};
+		8C65FF052E542DF700C51B85 /* Components */ = {
+			isa = PBXGroup;
+			children = (
+				8C65FF042E542DF700C51B85 /* PrimaryButtonStyle.swift */,
+			);
+			path = Components;
+			sourceTree = "<group>";
+		};
+		8C65FF092E542DF700C51B85 /* Views */ = {
+			isa = PBXGroup;
+			children = (
+				8C65FF052E542DF700C51B85 /* Components */,
+				8C65FF062E542DF700C51B85 /* NoteListView.swift */,
+				8C65FF072E542DF700C51B85 /* SingleNoteView.swift */,
+				8C65FF082E542DF700C51B85 /* TranscriptView.swift */,
+			);
+			path = Views;
+			sourceTree = "<group>";
+		};
 		8CC427B22E4845DD003D5E74 /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
@@ -105,11 +198,17 @@
 		8CE8DB0E2E457610006A9CB2 = {
 			isa = PBXGroup;
 			children = (
-				8CE8DB192E457610006A9CB2 /* Vera */,
 				8CE8DB2C2E457611006A9CB2 /* VeraTests */,
 				8CE8DB362E457611006A9CB2 /* VeraUITests */,
 				8CC427B22E4845DD003D5E74 /* Frameworks */,
 				8CE8DB182E457610006A9CB2 /* Products */,
+				8C65FECF2E542D0000C51B85 /* LFM2-700M-8da4w_output_8da8w-seq_4096.bundle */,
+				8C65FEE32E542DC200C51B85 /* Assets.xcassets */,
+				8C65FEE52E542DCD00C51B85 /* ContentView.swift */,
+				8C65FEF42E542DD600C51B85 /* Core */,
+				8C65FEFF2E542DE700C51B85 /* Vera.xcdatamodeld */,
+				8C65FF022E542DF100C51B85 /* VeraApp.swift */,
+				8C65FF092E542DF700C51B85 /* Views */,
 			);
 			sourceTree = "<group>";
 		};
@@ -137,9 +236,6 @@
 			buildRules = (
 			);
 			dependencies = (
-			);
-			fileSystemSynchronizedGroups = (
-				8CE8DB192E457610006A9CB2 /* Vera */,
 			);
 			name = Vera;
 			packageProductDependencies = (
@@ -208,6 +304,7 @@
 				TargetAttributes = {
 					8CE8DB162E457610006A9CB2 = {
 						CreatedOnToolsVersion = 16.4;
+						LastSwiftMigration = 1640;
 					};
 					8CE8DB282E457611006A9CB2 = {
 						CreatedOnToolsVersion = 16.4;
@@ -248,6 +345,8 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				8C65FEE42E542DC200C51B85 /* Assets.xcassets in Resources */,
+				8C65FED02E542D0000C51B85 /* LFM2-700M-8da4w_output_8da8w-seq_4096.bundle in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -272,6 +371,23 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				8C65FEF52E542DD600C51B85 /* TranscriptionService.swift in Sources */,
+				8C65FEF62E542DD600C51B85 /* MeetingRecordingService.swift in Sources */,
+				8C65FEF72E542DD600C51B85 /* View+InnerShadow.swift in Sources */,
+				8C65FF032E542DF100C51B85 /* VeraApp.swift in Sources */,
+				8C65FF012E542DE700C51B85 /* Vera.xcdatamodeld in Sources */,
+				8C65FEF82E542DD600C51B85 /* PersistenceController.swift in Sources */,
+				8C65FEF92E542DD600C51B85 /* StorageManager.swift in Sources */,
+				8C65FEFA2E542DD600C51B85 /* Color+Extensions.swift in Sources */,
+				8C65FF0A2E542DF700C51B85 /* SingleNoteView.swift in Sources */,
+				8C65FF0B2E542DF700C51B85 /* TranscriptView.swift in Sources */,
+				8C65FF0C2E542DF700C51B85 /* NoteListView.swift in Sources */,
+				8C65FF0D2E542DF700C51B85 /* PrimaryButtonStyle.swift in Sources */,
+				8C65FEFB2E542DD600C51B85 /* MeetingEnhancementService.swift in Sources */,
+				8C65FEFC2E542DD600C51B85 /* AudioRecorder.swift in Sources */,
+				8C65FEFD2E542DD600C51B85 /* LFM2Manager.swift in Sources */,
+				8C65FEFE2E542DD600C51B85 /* Meeting.swift in Sources */,
+				8C65FEE62E542DCD00C51B85 /* ContentView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -431,6 +547,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = M6QB73QRG6;
@@ -456,6 +573,7 @@
 				PRODUCT_BUNDLE_IDENTIFIER = com.lechiffre.Vera;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};
@@ -466,6 +584,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = M6QB73QRG6;
@@ -632,6 +751,19 @@
 			productName = LeapSDK;
 		};
 /* End XCSwiftPackageProductDependency section */
+
+/* Begin XCVersionGroup section */
+		8C65FEFF2E542DE700C51B85 /* Vera.xcdatamodeld */ = {
+			isa = XCVersionGroup;
+			children = (
+				8C65FF002E542DE700C51B85 /* Vera.xcdatamodel */,
+			);
+			currentVersion = 8C65FF002E542DE700C51B85 /* Vera.xcdatamodel */;
+			path = Vera.xcdatamodeld;
+			sourceTree = "<group>";
+			versionGroupType = wrapper.xcdatamodel;
+		};
+/* End XCVersionGroup section */
 	};
 	rootObject = 8CE8DB0F2E457610006A9CB2 /* Project object */;
 }
