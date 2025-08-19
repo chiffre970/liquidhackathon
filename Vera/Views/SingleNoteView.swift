@@ -69,8 +69,8 @@ struct SingleNoteView: View {
                 TextEditor(text: $noteContent)
                     .foregroundColor(.primaryText)
                     .scrollContentBackground(.hidden)
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 8)
+                    .padding(.horizontal, 11)  // Adjusted to match visual alignment with read mode
+                    .padding(.vertical, 3)      // Adjusted to match visual alignment with read mode
                     .focused($isEditing)
                     .onChange(of: noteContent) { newValue in
                         saveNote()
