@@ -143,6 +143,7 @@ struct NoteListView: View {
                 UINavigationBar.appearance().titleTextAttributes = [.foregroundColor: UIColor(Color.primaryText)]
             }
         }
+        .tint(.secondaryText)
     }
     
     private func createNewNote() {
@@ -226,7 +227,7 @@ struct NoteRowView: View {
                 .foregroundColor(.secondaryText)
         }
         .padding(.horizontal, 8)  // Add internal padding to move content inward
-        .frame(height: 65)
+        .frame(height: 80)
         .frame(maxWidth: .infinity)
         }
     }

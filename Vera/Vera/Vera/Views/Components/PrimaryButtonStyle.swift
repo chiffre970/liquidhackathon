@@ -6,8 +6,10 @@ struct FloatingActionButton: View {
     let action: () -> Void
     var isActive: Bool = false
     var showTitle: Bool = true
+    var isAnalyzing: Bool = false
     
     @State private var isPressed = false
+    @State private var textOpacity: Double = 1.0
     
     var body: some View {
         Button(action: action) {
@@ -60,16 +62,19 @@ struct FloatingActionButton: View {
                 
                 // Layer 5: Text/Content layer - on top of everything
                 // Matches .unified__text from Condor
-                HStack(spacing: showTitle && title != nil ? 12 : 0) {
-                    Image(systemName: icon)
-                        .font(.system(size: 20, weight: .semibold))
-                        .symbolEffect(.pulse, isActive: isActive)
-                        .foregroundColor(isActive ? Color.red : Color.white)
+                HStack(spacing: showTitle && title != nil && !icon.isEmpty ? 12 : 0) {
+                    if !icon.isEmpty {
+                        Image(systemName: icon)
+                            .font(.system(size: 20, weight: .semibold))
+                            .symbolEffect(.pulse, isActive: isActive)
+                            .foregroundColor(isActive ? Color.red : Color.white)
+                    }
                     
                     if showTitle, let title = title {
                         Text(title)
                             .font(.system(size: 16, weight: .semibold))
-                            .foregroundColor(isActive ? Color.red : Color.white)
+                            .foregroundColor(isAnalyzing ? Color.secondaryText : (isActive ? Color.red : Color.white))
+                            .opacity(isAnalyzing ? textOpacity : 1.0)
                     }
                 }
                 .zIndex(4)
@@ -84,6 +89,24 @@ struct FloatingActionButton: View {
                 isPressed = pressing
             }
         }, perform: {})
+        .onAppear {
+            if isAnalyzing {
+                withAnimation(Animation.easeInOut(duration: 0.8).repeatForever(autoreverses: true)) {
+                    textOpacity = 0.3
+                }
+            }
+        }
+        .onChange(of: isAnalyzing) { newValue in
+            if newValue {
+                withAnimation(Animation.easeInOut(duration: 0.8).repeatForever(autoreverses: true)) {
+                    textOpacity = 0.3
+                }
+            } else {
+                withAnimation(.default) {
+                    textOpacity = 1.0
+                }
+            }
+        }
     }
 }
 

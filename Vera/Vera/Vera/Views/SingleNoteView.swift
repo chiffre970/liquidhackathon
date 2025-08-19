@@ -8,9 +8,11 @@ struct SingleNoteView: View {
     @State private var noteTitle: String = ""
     @State private var isRecording = false
     @State private var isEnhancing = false
+    @State private var isAnalyzing = false
     @State private var showingShareSheet = false
     @State private var showingTranscript = false
     @State private var isEditingMode = false
+    @State private var showingMenu = false
     @FocusState private var isEditing: Bool
     @FocusState private var isTitleEditing: Bool
     
@@ -92,26 +94,12 @@ struct SingleNoteView: View {
                         }
                     }
                 }
+                .scrollContentBackground(.hidden)
+                .background(Color.clear)
                 .onTapGesture {
                     isEditingMode = true
                     isEditing = true
                 }
-            }
-            
-            // Recording indicator
-            if recordingService.isRecording {
-                HStack {
-                    Image(systemName: "dot.radiowaves.left.and.right")
-                        .foregroundColor(.red)
-                        .symbolEffect(.pulse)
-                    Text("Recording: \(formatDuration(recordingService.recordingDuration))")
-                        .font(.caption)
-                        .foregroundColor(.red)
-                }
-                .padding(.horizontal)
-                .padding(.vertical, 8)
-                .background(Color.red.opacity(0.1))
-                .cornerRadius(8)
             }
             }
             .overlay(
@@ -120,11 +108,12 @@ struct SingleNoteView: View {
                 Spacer()
                 
                 FloatingActionButton(
-                    title: recordingService.isRecording ? "Stop Recording" : "Start Recording",
-                    icon: recordingService.isRecording ? "stop.circle.fill" : "mic.circle.fill",
-                    action: toggleRecording,
+                    title: isAnalyzing ? "Generating Notes" : (recordingService.isRecording ? "Stop Recording" : "Record"),
+                    icon: isAnalyzing ? "" : (recordingService.isRecording ? "stop.circle.fill" : "mic.circle.fill"),
+                    action: isAnalyzing ? {} : toggleRecording,
                     isActive: recordingService.isRecording,
-                    showTitle: true
+                    showTitle: true,
+                    isAnalyzing: isAnalyzing
                 )
                 .padding(.bottom, 30)
             }
@@ -147,6 +136,72 @@ struct SingleNoteView: View {
                 Spacer()
             }
         )
+        
+        // Custom dropdown menu overlay
+        if showingMenu {
+            Color.black.opacity(0.3)
+                .ignoresSafeArea()
+                .onTapGesture {
+                    showingMenu = false
+                }
+            
+            VStack {
+                HStack {
+                    Spacer()
+                    VStack(alignment: .leading, spacing: 0) {
+                        if let transcript = meeting.transcript, !transcript.isEmpty {
+                            Button(action: {
+                                showingMenu = false
+                                showingTranscript = true
+                            }) {
+                                HStack(spacing: 12) {
+                                    Image(systemName: "text.quote")
+                                        .font(.system(size: 16))
+                                        .frame(width: 24)
+                                    Text("View Transcript")
+                                        .font(.system(size: 16))
+                                    Spacer()
+                                }
+                                .padding(.horizontal, 16)
+                                .padding(.vertical, 14)
+                                .foregroundColor(.white)
+                            }
+                            
+                            Rectangle()
+                                .fill(Color.white.opacity(0.15))
+                                .frame(height: 0.5)
+                                .padding(.horizontal, 16)
+                        }
+                        
+                        Button(action: {
+                            showingMenu = false
+                            showingShareSheet = true
+                        }) {
+                            HStack(spacing: 12) {
+                                Image(systemName: "square.and.arrow.up")
+                                    .font(.system(size: 16))
+                                    .frame(width: 24)
+                                Text("Share")
+                                    .font(.system(size: 16))
+                                Spacer()
+                            }
+                            .padding(.horizontal, 16)
+                            .padding(.vertical, 14)
+                            .foregroundColor(.white)
+                        }
+                    }
+                    .frame(width: 220)
+                    .background(
+                        RoundedRectangle(cornerRadius: 12)
+                            .fill(Color.primaryBackground)
+                            .shadow(color: Color.black.opacity(0.2), radius: 8, x: 0, y: 4)
+                    )
+                    .padding(.trailing, 16)
+                    .padding(.top, 8)
+                }
+                Spacer()
+            }
+        }
         }
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
@@ -191,32 +246,15 @@ struct SingleNoteView: View {
             }
             
             ToolbarItem(placement: .navigationBarTrailing) {
-                Menu {
-                    if let transcript = meeting.transcript, !transcript.isEmpty {
-                        Button(action: { 
-                            showingTranscript = true
-                        }) {
-                            Label("View Transcript", systemImage: "text.quote")
-                        }
-                    }
-                    
-                    Button(action: { 
-                        enhanceWithAI()
-                    }) {
-                        Label("Reanalyze with AI", systemImage: "sparkles")
-                    }
-                    .disabled(isEnhancing)
-                    
-                    Button(action: { 
-                        showingShareSheet = true 
-                    }) {
-                        Label("Share", systemImage: "square.and.arrow.up")
-                    }
-                } label: {
+                Button(action: { 
+                    showingMenu.toggle()
+                }) {
                     Image(systemName: "ellipsis.circle")
+                        .foregroundColor(.secondaryText)
                 }
             }
         }
+        .tint(.secondaryText)
         .onAppear {
             loadNote()
             recordingService.currentMeeting = meeting
@@ -224,6 +262,9 @@ struct SingleNoteView: View {
             // Don't auto-focus keyboard
             isEditingMode = false
             isEditing = false
+            
+            // Set navigation bar tint color for back button
+            UINavigationBar.appearance().tintColor = UIColor(Color.secondaryText)
         }
         .onDisappear {
             if recordingService.isRecording {
@@ -243,6 +284,7 @@ struct SingleNoteView: View {
             // Reload notes when LFM2 analysis completes
             if let meetingID = notification.userInfo?["meetingID"] as? UUID,
                meetingID == meeting.id {
+                isAnalyzing = false
                 loadNote()
             }
         }
@@ -317,6 +359,10 @@ struct SingleNoteView: View {
         if recordingService.isRecording {
             recordingService.stopRecordingSession()
             isRecording = false
+            // Show analyzing state if we have a transcript
+            if !recordingService.currentTranscript.isEmpty {
+                isAnalyzing = true
+            }
             // Update transcript immediately with what we have
             updateTranscript()
             // Note: Enhancement happens automatically in MeetingRecordingService.processInBackground

@@ -49,12 +49,30 @@ struct TranscriptView: View {
         HStack {
             Image(systemName: "magnifyingglass")
                 .foregroundColor(.secondaryText)
+                .font(.system(size: 18, weight: .medium))
             
-            TextField("Search transcript...", text: $searchText)
-                .textFieldStyle(RoundedBorderTextFieldStyle())
+            TextField("", text: $searchText, prompt: Text("Search transcript").foregroundColor(.secondaryText))
+                .textFieldStyle(PlainTextFieldStyle())
                 .foregroundColor(.primaryText)
+                .accentColor(.secondaryText)
+                .font(.system(size: 16, weight: .regular))
+            
+            if !searchText.isEmpty {
+                Button(action: { searchText = "" }) {
+                    Image(systemName: "xmark.circle.fill")
+                        .foregroundColor(.secondaryText)
+                }
+            }
         }
-        .padding()
+        .frame(height: 46)
+        .padding(.horizontal, 20)
+        .background(Color.clear)
+        .overlay(
+            RoundedRectangle(cornerRadius: 28)
+                .stroke(Color.secondaryText.opacity(0.2), lineWidth: 1)
+        )
+        .padding(.horizontal, 16)
+        .padding(.vertical, 8)
     }
     
     private func buildHighlightedText(from transcript: String) -> Text {
