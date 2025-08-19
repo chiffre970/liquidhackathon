@@ -224,7 +224,7 @@ struct NoteRowView: View {
                 .foregroundColor(.secondaryText)
         }
         .padding(.horizontal, 8)  // Add internal padding to move content inward
-        .frame(height: 85)
+        .frame(height: 90)
         .frame(maxWidth: .infinity)
         }
     }

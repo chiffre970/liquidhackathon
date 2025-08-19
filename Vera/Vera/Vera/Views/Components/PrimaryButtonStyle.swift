@@ -20,21 +20,21 @@ struct FloatingActionButton: View {
                 // Layer 2: Upper Highlight - positioned inside top area
                 // Matches .unified__highlight-upper from Condor
                 RoundedRectangle(cornerRadius: 26)
-                    .stroke(Color(hex: "#D0E8FF").opacity(0.2), lineWidth: 1.5)
+                    .stroke(Color.white.opacity(0.8), lineWidth: 1.5)
                     .blur(radius: 0.45)
-                    .padding(.top, 2.5)
+                    .padding(.top, 4)
                     .padding(.horizontal, 4)
-                    .padding(.bottom, 5)
+                    .padding(.bottom, 7)
                 
                 // Layer 3: Lower Highlight - positioned at bottom edge
                 // Cuts off around the middle of the side curves
                 RoundedRectangle(cornerRadius: 26)
-                    .stroke(Color(hex: "#D0E8FF").opacity(0.2), lineWidth: 1.5)
+                    .stroke(Color.white.opacity(0.8), lineWidth: 1.5)
                     .blur(radius: 0.45)
                     .padding(.top, -5)      // Extends above to cut off at side curve midpoint
-                    .padding(.horizontal, 0)  // Extends beyond sides
-                    .padding(.bottom, 1.5)  // Flush with bottom edge
-                    .mask(RoundedRectangle(cornerRadius: 28)) // Mask to button shape to clip overflow
+                    .padding(.horizontal, -1)  // padding from edges
+                    .padding(.bottom, 0)  // Flush with bottom edge (no gap)
+                    .mask(RoundedRectangle(cornerRadius: 26)) // Mask to button shape to clip overflow
                 
                 // Layer 4: Inner Fill - much darker blue
                 // Very dark navy blue, almost black
@@ -48,8 +48,8 @@ struct FloatingActionButton: View {
                         .fill(
                             LinearGradient(
                                 gradient: Gradient(colors: [
-                                    Color.white.opacity(0.0),
-                                    Color.white.opacity(0.03)
+                                    Color.black.opacity(0.05),
+                                    Color.white.opacity(0.05)
                                 ]),
                                 startPoint: .top,
                                 endPoint: .bottom
@@ -83,7 +83,7 @@ struct FloatingActionButton: View {
         }
         .frame(maxWidth: .infinity) // Full width like search bar
         .padding(.horizontal, 16) // Match search bar horizontal padding
-        .buttonStyle(UnifiedButtonStyle(isActive: isActive, isPressed: isPressed))
+        .buttonStyle(UnifiedButtonStyle(isActive: isActive, isAnalyzing: isAnalyzing, isPressed: isPressed))
         .onLongPressGesture(minimumDuration: .infinity, maximumDistance: .infinity, pressing: { pressing in
             withAnimation(.spring(response: 0.2, dampingFraction: 0.7)) {
                 isPressed = pressing
@@ -114,6 +114,7 @@ struct FloatingActionButton: View {
 // Matches the Condor .unified-element base styling
 struct UnifiedButtonStyle: ButtonStyle {
     let isActive: Bool
+    var isAnalyzing: Bool = false
     let isPressed: Bool
     
     func makeBody(configuration: Configuration) -> some View {
@@ -122,14 +123,14 @@ struct UnifiedButtonStyle: ButtonStyle {
                 // Layer 1: Base layer with gradient border and background
                 // Dark background with gradient border
                 RoundedRectangle(cornerRadius: 28)
-                    .fill(Color(hex: "#1A2332")) // Much darker main fill
+                    .fill(Color(hex: "#242F41")) // Much darker main fill
                     .overlay(
                         RoundedRectangle(cornerRadius: 28)
                             .stroke(
                                 LinearGradient(
                                     gradient: Gradient(colors: [
-                                        Color(hex: "#232B31"), // Top color (50% darker)
-                                        Color(hex: "#3D454E")  // Bottom color (50% darker)
+                                        Color(hex: "#475562"), // Top color (50% darker)
+                                        Color(hex: "#333E48")  // Bottom color (50% darker)
                                     ]),
                                     startPoint: .top,
                                     endPoint: .bottom
@@ -139,7 +140,7 @@ struct UnifiedButtonStyle: ButtonStyle {
                     )
             )
             // No shadow/glow - removed per request
-            .scaleEffect(configuration.isPressed || isPressed ? 0.95 : 1.0)
-            .animation(.spring(response: 0.2, dampingFraction: 0.7), value: configuration.isPressed || isPressed)
+            .scaleEffect((configuration.isPressed || isPressed) && !isActive && !isAnalyzing ? 0.95 : 1.0)
+            .animation(.spring(response: 0.2, dampingFraction: 0.7), value: (configuration.isPressed || isPressed) && !isActive && !isAnalyzing)
     }
 }
