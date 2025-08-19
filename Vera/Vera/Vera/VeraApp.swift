@@ -50,7 +50,6 @@ struct VeraApp: App {
             ContentView()
                 .environment(\.managedObjectContext, persistenceController.container.viewContext)
                 .environmentObject(lfm2Manager)
-                .preferredColorScheme(.light)
                 .task {
                     await lfm2Manager.initialize()
                 }

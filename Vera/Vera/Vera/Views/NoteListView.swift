@@ -118,6 +118,7 @@ struct NoteListView: View {
                     .listStyle(PlainListStyle())
                     .scrollContentBackground(.hidden)
                     .background(Color.clear)
+                    .tint(.secondaryText)
                 }
                 .navigationDestination(isPresented: $showingNote) {
                     if let meeting = selectedMeeting {
