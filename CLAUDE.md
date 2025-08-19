@@ -96,8 +96,8 @@ ContentView (TabView)
 
 ## LFM2 Integration
 
-The app uses Leap SDK to run the LFM2-700M model on-device:
-- Model bundle: `LFM2-700M-8da4w_output_8da8w-seq_4096.bundle` 
+The app uses Leap SDK to run the LFM2-1.2B model on-device:
+- Model bundle: `LFM2-1.2B-8da4w_output_8da8w-seq_4096.bundle` 
 - Inference: Streaming text generation with customizable temperature/top-p
 - Current approach: Simple text prompts for meeting analysis (JSON parsing available but not currently used)
 - Processing: Happens after recording ends via `analyzeCompletedMeeting()`

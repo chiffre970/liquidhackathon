@@ -4,7 +4,7 @@ An intelligent iOS app that records meetings, transcribes conversations in real-
 
 ## Vision
 
-Vera transforms meetings into structured, actionable intelligence. Simply tap to record, and let the app transcribe conversations and extract action items, key decisions, and important questions using the powerful LFM2 700M model - all processed locally on your device.
+Vera transforms meetings into structured, actionable intelligence. Simply tap to record, and let the app transcribe conversations and extract action items, key decisions, and important questions using the powerful LFM2 1.2B model - all processed locally on your device.
 
 ## Features
 
@@ -20,7 +20,7 @@ Vera transforms meetings into structured, actionable intelligence. Simply tap to
 
 - **Platform**: iOS 15.0+
 - **UI Framework**: SwiftUI
-- **AI Model**: LFM2 700M (via LEAP SDK)
+- **AI Model**: LFM2 1.2B (via LEAP SDK)
 - **Speech**: Apple Speech Framework
 - **Audio**: AVFoundation
 - **Storage**: Core Data
@@ -39,7 +39,7 @@ Vera/
 │   ├── MeetingList/    # Meeting history
 │   └── MeetingDetail/  # Enhanced notes view
 └── Resources/
-    └── LFM2/           # 700M model bundle
+    └── LFM2/           # 1.2B model bundle
 ```
 
 ## Privacy First

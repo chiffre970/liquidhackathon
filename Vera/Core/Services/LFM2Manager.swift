@@ -72,7 +72,7 @@ class LFM2Manager: ObservableObject {
     func loadModel() async throws {
         // Get bundle path - DO NOT EXTRACT
         guard let bundlePath = Bundle.main.path(
-            forResource: "LFM2-700M-8da4w_output_8da8w-seq_4096",
+            forResource: "LFM2-1.2B-8da4w_output_8da8w-seq_4096",
             ofType: "bundle"
         ) else {
             throw LFM2Error.modelLoadFailed("Bundle not found")

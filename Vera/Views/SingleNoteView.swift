@@ -14,6 +14,10 @@ struct SingleNoteView: View {
     @State private var isEditingMode = false
     @State private var showingMenu = false
     @State private var showRecordButton = true
+    @State private var liveTranscript: String = ""
+    @State private var scrollOffset: CGFloat = 0
+    @State private var textWidth: CGFloat = 0
+    @State private var containerWidth: CGFloat = 0
     @FocusState private var isEditing: Bool
     @FocusState private var isTitleEditing: Bool
     
@@ -65,6 +69,75 @@ struct SingleNoteView: View {
                 )
             
             VStack(spacing: 0) {
+            // Live transcription ticker when recording
+            if recordingService.isRecording {
+                GeometryReader { geometry in
+                    ZStack(alignment: .leading) {
+                        // Background
+                        Rectangle()
+                            .fill(Color.black.opacity(0.03))
+                            .frame(height: 32)
+                        
+                        // Scrolling text container
+                        HStack(spacing: 0) {
+                            if !liveTranscript.isEmpty {
+                                Text(liveTranscript)
+                                    .font(.system(size: 13, weight: .medium, design: .rounded))
+                                    .foregroundColor(.gray)
+                                    .lineLimit(1)
+                                    .fixedSize(horizontal: true, vertical: false)
+                                    .background(
+                                        GeometryReader { textGeometry in
+                                            Color.clear
+                                                .onAppear {
+                                                    textWidth = textGeometry.size.width
+                                                    containerWidth = geometry.size.width
+                                                }
+                                        }
+                                    )
+                            } else {
+                                Text("Listening...")
+                                    .font(.system(size: 13, weight: .medium, design: .rounded))
+                                    .foregroundColor(.gray.opacity(0.5))
+                                    .italic()
+                            }
+                            
+                            // Add spacing and second copy for continuous scroll if text is long
+                            if textWidth > geometry.size.width {
+                                Text("     •     ")
+                                    .font(.system(size: 13, weight: .medium, design: .rounded))
+                                    .foregroundColor(.gray)
+                                
+                                Text(liveTranscript)
+                                    .font(.system(size: 13, weight: .medium, design: .rounded))
+                                    .foregroundColor(.gray)
+                                    .lineLimit(1)
+                                    .fixedSize(horizontal: true, vertical: false)
+                            }
+                        }
+                        .offset(x: scrollOffset)
+                        .onAppear {
+                            containerWidth = geometry.size.width
+                            startScrolling()
+                        }
+                        .onChange(of: liveTranscript) { _ in
+                            // Reset scroll offset and recalculate width when text changes
+                            withAnimation(.none) {
+                                scrollOffset = 0
+                            }
+                            // Small delay to let text measure itself
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                                startScrolling()
+                            }
+                        }
+                    }
+                    .frame(height: 32)
+                    .clipped()
+                }
+                .frame(height: 32)
+                .transition(.move(edge: .top).combined(with: .opacity))
+            }
+            
             // Note content - show markdown rendered or editor
             if isEditingMode {
                 TextEditor(text: $noteContent)
@@ -291,8 +364,16 @@ struct SingleNoteView: View {
         .sheet(isPresented: $showingTranscript) {
             TranscriptView(meeting: meeting)
         }
-        .onReceive(NotificationCenter.default.publisher(for: Notification.Name("TranscriptUpdated"))) { _ in
-            updateTranscript()
+        .onReceive(NotificationCenter.default.publisher(for: Notification.Name("TranscriptUpdated"))) { notification in
+            // Update live transcript for ticker from notification
+            if recordingService.isRecording,
+               let transcript = notification.userInfo?["transcript"] as? String {
+                liveTranscript = transcript
+            }
+            // Only update saved transcript when recording stops
+            if !recordingService.isRecording {
+                updateTranscript()
+            }
         }
         .onReceive(NotificationCenter.default.publisher(for: Notification.Name("MeetingAnalysisCompleted"))) { notification in
             // Reload notes when LFM2 analysis completes
@@ -373,6 +454,7 @@ struct SingleNoteView: View {
         if recordingService.isRecording {
             recordingService.stopRecordingSession()
             isRecording = false
+            liveTranscript = ""  // Clear live transcript
             // Show analyzing state if we have a transcript
             if !recordingService.currentTranscript.isEmpty {
                 isAnalyzing = true
@@ -383,6 +465,7 @@ struct SingleNoteView: View {
         } else {
             recordingService.startRecordingSession()
             isRecording = true
+            liveTranscript = ""  // Clear on start
         }
     }
     
@@ -442,6 +525,22 @@ struct SingleNoteView: View {
         let minutes = Int(duration) / 60
         let seconds = Int(duration) % 60
         return String(format: "%02d:%02d", minutes, seconds)
+    }
+    
+    private func startScrolling() {
+        guard !liveTranscript.isEmpty && textWidth > containerWidth else { 
+            // If text fits, don't scroll
+            scrollOffset = 0
+            return 
+        }
+        
+        let totalScrollDistance = textWidth + 100 // Include separator space
+        let scrollSpeed: Double = 40 // pixels per second
+        let duration = totalScrollDistance / scrollSpeed
+        
+        withAnimation(.linear(duration: duration).repeatForever(autoreverses: false)) {
+            scrollOffset = -totalScrollDistance
+        }
     }
 }
 

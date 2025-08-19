@@ -9,7 +9,6 @@
 /* Begin PBXBuildFile section */
 		8C2AADD22E4C741D00AE8768 /* LeapModelDownloader in Frameworks */ = {isa = PBXBuildFile; productRef = 8C2AADD12E4C741D00AE8768 /* LeapModelDownloader */; };
 		8C2AADD42E4C741D00AE8768 /* LeapSDK in Frameworks */ = {isa = PBXBuildFile; productRef = 8C2AADD32E4C741D00AE8768 /* LeapSDK */; };
-		8C65FED02E542D0000C51B85 /* LFM2-700M-8da4w_output_8da8w-seq_4096.bundle in Resources */ = {isa = PBXBuildFile; fileRef = 8C65FECF2E542D0000C51B85 /* LFM2-700M-8da4w_output_8da8w-seq_4096.bundle */; };
 		8C65FEE42E542DC200C51B85 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 8C65FEE32E542DC200C51B85 /* Assets.xcassets */; };
 		8C65FEE62E542DCD00C51B85 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8C65FEE52E542DCD00C51B85 /* ContentView.swift */; };
 		8C65FEF52E542DD600C51B85 /* TranscriptionService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8C65FEF22E542DD600C51B85 /* TranscriptionService.swift */; };
@@ -28,6 +27,7 @@
 		8C65FF0B2E542DF700C51B85 /* TranscriptView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8C65FF082E542DF700C51B85 /* TranscriptView.swift */; };
 		8C65FF0C2E542DF700C51B85 /* NoteListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8C65FF062E542DF700C51B85 /* NoteListView.swift */; };
 		8C65FF0D2E542DF700C51B85 /* PrimaryButtonStyle.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8C65FF042E542DF700C51B85 /* PrimaryButtonStyle.swift */; };
+		8C65FF0F2E5462CB00C51B85 /* LFM2-1.2B-8da4w_output_8da8w-seq_4096.bundle in Resources */ = {isa = PBXBuildFile; fileRef = 8C65FF0E2E5462CB00C51B85 /* LFM2-1.2B-8da4w_output_8da8w-seq_4096.bundle */; };
 		8CC427B42E4845DD003D5E74 /* Accelerate.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8CC427B32E4845DD003D5E74 /* Accelerate.framework */; };
 		8CC427B62E4845E5003D5E74 /* Metal.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8CC427B52E4845E5003D5E74 /* Metal.framework */; };
 		8CC427B82E4845F0003D5E74 /* MetalPerformanceShaders.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8CC427B72E4845F0003D5E74 /* MetalPerformanceShaders.framework */; };
@@ -52,7 +52,6 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
-		8C65FECF2E542D0000C51B85 /* LFM2-700M-8da4w_output_8da8w-seq_4096.bundle */ = {isa = PBXFileReference; lastKnownFileType = file; path = "LFM2-700M-8da4w_output_8da8w-seq_4096.bundle"; sourceTree = "<group>"; };
 		8C65FEE32E542DC200C51B85 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		8C65FEE52E542DCD00C51B85 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		8C65FEE72E542DD600C51B85 /* Color+Extensions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Color+Extensions.swift"; sourceTree = "<group>"; };
@@ -71,6 +70,7 @@
 		8C65FF062E542DF700C51B85 /* NoteListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NoteListView.swift; sourceTree = "<group>"; };
 		8C65FF072E542DF700C51B85 /* SingleNoteView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SingleNoteView.swift; sourceTree = "<group>"; };
 		8C65FF082E542DF700C51B85 /* TranscriptView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TranscriptView.swift; sourceTree = "<group>"; };
+		8C65FF0E2E5462CB00C51B85 /* LFM2-1.2B-8da4w_output_8da8w-seq_4096.bundle */ = {isa = PBXFileReference; lastKnownFileType = file; path = "LFM2-1.2B-8da4w_output_8da8w-seq_4096.bundle"; sourceTree = "<group>"; };
 		8CC427B32E4845DD003D5E74 /* Accelerate.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Accelerate.framework; path = System/Library/Frameworks/Accelerate.framework; sourceTree = SDKROOT; };
 		8CC427B52E4845E5003D5E74 /* Metal.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Metal.framework; path = System/Library/Frameworks/Metal.framework; sourceTree = SDKROOT; };
 		8CC427B72E4845F0003D5E74 /* MetalPerformanceShaders.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = MetalPerformanceShaders.framework; path = System/Library/Frameworks/MetalPerformanceShaders.framework; sourceTree = SDKROOT; };
@@ -202,13 +202,13 @@
 				8CE8DB362E457611006A9CB2 /* VeraUITests */,
 				8CC427B22E4845DD003D5E74 /* Frameworks */,
 				8CE8DB182E457610006A9CB2 /* Products */,
-				8C65FECF2E542D0000C51B85 /* LFM2-700M-8da4w_output_8da8w-seq_4096.bundle */,
 				8C65FEE32E542DC200C51B85 /* Assets.xcassets */,
 				8C65FEE52E542DCD00C51B85 /* ContentView.swift */,
 				8C65FEF42E542DD600C51B85 /* Core */,
 				8C65FEFF2E542DE700C51B85 /* Vera.xcdatamodeld */,
 				8C65FF022E542DF100C51B85 /* VeraApp.swift */,
 				8C65FF092E542DF700C51B85 /* Views */,
+				8C65FF0E2E5462CB00C51B85 /* LFM2-1.2B-8da4w_output_8da8w-seq_4096.bundle */,
 			);
 			sourceTree = "<group>";
 		};
@@ -346,7 +346,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				8C65FEE42E542DC200C51B85 /* Assets.xcassets in Resources */,
-				8C65FED02E542D0000C51B85 /* LFM2-700M-8da4w_output_8da8w-seq_4096.bundle in Resources */,
+				8C65FF0F2E5462CB00C51B85 /* LFM2-1.2B-8da4w_output_8da8w-seq_4096.bundle in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

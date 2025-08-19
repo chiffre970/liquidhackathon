@@ -55,6 +55,13 @@ class MeetingRecordingService: ObservableObject {
                 
                 self.currentTranscript = text
                 self.lastTranscriptLength = text.count
+                
+                // Post notification for live transcript updates
+                NotificationCenter.default.post(
+                    name: Notification.Name("TranscriptUpdated"),
+                    object: nil,
+                    userInfo: ["transcript": text]
+                )
             }
             .store(in: &cancellables)
         
