@@ -13,6 +13,7 @@ struct SingleNoteView: View {
     @State private var showingTranscript = false
     @State private var isEditingMode = false
     @State private var showingMenu = false
+    @State private var showRecordButton = true
     @FocusState private var isEditing: Bool
     @FocusState private var isTitleEditing: Bool
     
@@ -81,6 +82,13 @@ struct SingleNoteView: View {
                             Button("Done") {
                                 isEditing = false
                                 isEditingMode = false
+                                // Delay showing the record button until keyboard animation completes
+                                showRecordButton = false
+                                DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
+                                    withAnimation(.easeIn(duration: 0.1)) {
+                                        showRecordButton = true
+                                    }
+                                }
                             }
                             .font(.body.bold())
                             .foregroundColor(.blue)
@@ -108,25 +116,35 @@ struct SingleNoteView: View {
                 .scrollContentBackground(.hidden)
                 .background(Color.clear)
                 .onTapGesture {
-                    isEditingMode = true
-                    isEditing = true
+                    withAnimation(.easeOut(duration: 0.05)) {
+                        showRecordButton = false  // Fade out quickly when entering edit mode
+                    }
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
+                        isEditingMode = true
+                        isEditing = true
+                    }
                 }
             }
             }
             .overlay( 
-            // Floating Record Button
-            VStack {
-                Spacer()
-                
-                FloatingActionButton(
-                    title: isAnalyzing ? "Generating Notes" : (recordingService.isRecording ? "Stop Recording" : "Record"),
-                    icon: isAnalyzing ? "" : (recordingService.isRecording ? "stop.circle.fill" : "mic.circle.fill"),
-                    action: isAnalyzing ? {} : toggleRecording,
-                    isActive: recordingService.isRecording,
-                    showTitle: true,
-                    isAnalyzing: isAnalyzing
-                )
-                .padding(.bottom, 30)
+            // Floating Record Button - hidden when editing
+            Group {
+                if !isEditingMode && showRecordButton {
+                    VStack {
+                        Spacer()
+                        
+                        FloatingActionButton(
+                            title: isAnalyzing ? "Generating Notes" : (recordingService.isRecording ? "Stop Recording" : "Record"),
+                            icon: isAnalyzing ? "" : (recordingService.isRecording ? "stop.circle.fill" : "mic.circle.fill"),
+                            action: isAnalyzing ? {} : toggleRecording,
+                            isActive: recordingService.isRecording,
+                            showTitle: true,
+                            isAnalyzing: isAnalyzing
+                        )
+                        .padding(.bottom, 30)
+                        .transition(.opacity)
+                    }
+                }
             }
         )
         
