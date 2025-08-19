@@ -19,11 +19,11 @@ struct FloatingActionButton: View {
                 
                 // Layer 2: Upper Highlight - positioned inside top area
                 // Matches .unified__highlight-upper from Condor
-                RoundedRectangle(cornerRadius: 26)
+                RoundedRectangle(cornerRadius: 25)
                     .stroke(Color.white.opacity(0.8), lineWidth: 1.5)
                     .blur(radius: 0.45)
                     .padding(.top, 4)
-                    .padding(.horizontal, 4)
+                    .padding(.horizontal, 5)
                     .padding(.bottom, 7)
                 
                 // Layer 3: Lower Highlight - positioned at bottom edge

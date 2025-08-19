@@ -24,10 +24,21 @@ struct VeraApp: App {
         appearance.backgroundEffect = nil
         appearance.shadowColor = nil
         
-        // Set title to light grey color
+        // Set title to light grey color with shadow
         let titleColor = UIColor(red: 211/255, green: 227/255, blue: 240/255, alpha: 1.0) // #D3E3F0
-        appearance.largeTitleTextAttributes = [.foregroundColor: titleColor]
-        appearance.titleTextAttributes = [.foregroundColor: titleColor]
+        let shadow = NSShadow()
+        shadow.shadowColor = UIColor.black
+        shadow.shadowOffset = CGSize(width: 0, height: -2)
+        shadow.shadowBlurRadius = 0
+        
+        appearance.largeTitleTextAttributes = [
+            .foregroundColor: titleColor,
+            .shadow: shadow
+        ]
+        appearance.titleTextAttributes = [
+            .foregroundColor: titleColor,
+            .shadow: shadow
+        ]
         
         UINavigationBar.appearance().standardAppearance = appearance
         UINavigationBar.appearance().scrollEdgeAppearance = appearance
