@@ -21,7 +21,7 @@ struct FloatingActionButton: View {
                 // Matches .unified__highlight-upper from Condor
                 RoundedRectangle(cornerRadius: 25)
                     .stroke(Color.white.opacity(0.8), lineWidth: 1.5)
-                    .blur(radius: 0.45)
+                    .blur(radius: 0.7)  // Increased blur for softer glow
                     .padding(.top, 4)
                     .padding(.horizontal, 5)
                     .padding(.bottom, 7)
@@ -30,7 +30,7 @@ struct FloatingActionButton: View {
                 // Cuts off around the middle of the side curves
                 RoundedRectangle(cornerRadius: 26)
                     .stroke(Color.white.opacity(0.8), lineWidth: 1.5)
-                    .blur(radius: 0.45)
+                    .blur(radius: 0.7)  // Increased blur for softer glow
                     .padding(.top, -5)      // Extends above to cut off at side curve midpoint
                     .padding(.horizontal, -1)  // padding from edges
                     .padding(.bottom, 0)  // Flush with bottom edge (no gap)
