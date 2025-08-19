@@ -1,21 +1,29 @@
-# Vera - AI-Powered Meeting Assistant
+# Vera - Take notes and summarise meetings, powered by LFM2
 
-An intelligent iOS app that records meetings, transcribes conversations in real-time, and uses on-device AI to extract actionable insights.
+An intelligent iOS native app that records meetings, transcribes conversations in real-time, and uses on-device AI to extract actionable insights.
 
 ## Vision
 
 Vera turns meetings into structured, useful information. Simply tap to record, and let the app transcribe conversations and extract action items, key decisions, and important questions using the powerful LFM2 1.2B model - all processed locally on your device.
 
-## Features
+## Key Features
+
+- **Audio Deduplication**: Apple's Speech framework automatically chunks every 30s as well as during natural pauses, so I developed a system to manage and deduplicate the chunks into one cohesive transcript
+- **LFM2 Pipeline**: I experimented with a few different approaches to using LFM2, including multi-stage processing, and different model sizes, but in the end most effective was using 1.2B with a simple prompt and give the model the latitude to use data as it sees fit. It would have been good to fine tune the model, or in the future use the 1.2B-Extract model.
+- **Complete Privacy**: All processing happens on-device, no cloud dependencies
+- **Note taking**: Add personal notes to the AI summary
+
+## Functionality
 
 - **Real-Time Transcription**: Apple's Speech framework converts speech to text as you record
 - **Intelligent Enhancement**: LFM2 generates summaries, extracts action items, and identifies key decisions
 - **Complete Privacy**: All processing happens on-device, no cloud dependencies
+- **Note taking**: Add personal notes to the AI summary
 
 ## Technical Stack
 
 - **Platform**: iOS 15.0+
-- **UI Framework**: SwiftUI
+- **Language**: Swift
 - **AI Model**: LFM2 1.2B (via LEAP SDK)
 - **Speech**: Apple Speech Framework
 - **Audio**: AVFoundation
